@@ -1,5 +1,4 @@
 defmodule Validacion do
-
   def validar_lote(lote, confeccionistas, lineas) do
     with :ok <- verificar_confeccionista(lote, confeccionistas),
          :ok <- verificar_linea(lote, lineas),
@@ -66,12 +65,50 @@ defmodule Validacion do
       Enum.reduce(validaciones, %{validos: [], invalidos: []}, fn
         {_lote, {:ok, lote_valido}}, acc ->
           %{acc | validos: [lote_valido | acc.validos]}
-          # accvalidos lo que hace es que me trae la lista que ya existia desde antes,
-          # para sumarle el nuevo lot ademas represneta que me trae el valor de la clave validos del mapa acc
+
+        # accvalidos lo que hace es que me trae la lista que ya existia desde antes,
+        # para sumarle el nuevo lot ademas represneta que me trae el valor de la clave validos del mapa acc
 
         {lote, {:error, motivo}}, acc ->
           %{acc | invalidos: [{lote, motivo} | acc.invalidos]}
       end)
   end
-end
 
+  defp parsear_lote_adicional(texto) when is_binary(texto) do
+    campos = texto
+    |> String.split(";")
+    |> Enum.map(fn x -> String.trim(x) end)
+
+    with [confeccionista, linea, dia_texto, prendas_texto, defectos_texto] <- campos,
+         {:ok, dia} <- Util.texto_a_numero(dia_texto),
+         {:ok, prendas} <- Util.texto_a_numero(prendas_texto),
+         {:ok, defectos} <- Util.texto_a_numero(defectos_texto) do
+      {:ok,
+       %{
+         confeccionista: confeccionista,
+         linea: linea,
+         dia: dia,
+         prendas: prendas,
+         defectos: defectos
+       }}
+    else
+      _ -> {:error, :formato_invalido}
+    end
+  end
+
+  defp parsear_lote_adicional(_otro), do: {:error, :formato_invalido}
+
+  def evaluar_lote_adicional(texto, confeccionistas, lineas) do
+    case String.trim(texto) do
+      "" ->  :omitido
+
+      contenido ->
+        with {:ok, lote} <- parsear_lote_adicional(contenido) do
+          case validar_lote(lote, confeccionistas, lineas) do
+            {:ok, lote_valido} -> {:agregado, lote_valido}
+            {:error, motivo} -> {:rechazado, lote, motivo}
+          end
+        end
+    end
+  end
+end
