@@ -164,5 +164,9 @@ defmodule Util do
     end
   end
 
+  def indexar_por(elementos, clave) do
+    Map.new(elementos, fn elemento -> {Map.get(elemento, clave), elemento} end)
+  end
+
 
 end
