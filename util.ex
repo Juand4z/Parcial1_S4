@@ -132,7 +132,37 @@ defmodule Util do
     end
   end
 
-  
+  @doc """
+  Funcion mejorada con IA para hacer que un valor numerico ya sea entero o float quede solo con dos decimales, esto puede ser util para mostrar numeros por
+  consola sin la notacion de la terminal
+  ## Parametros
+   -valor, para convertirlo a dos decimales
+  """
+  def formater(valor) do
+    :io_lib.format("~.2f", [valor]) |> List.to_string()
+  end
+
+
+  @doc """
+  Funcion generada con IA para pasar de una cadena de texto a un valor numerico que puede ser entero o float
+  ## Parametros
+   -valor, para convertirlo a dos decimales
+  """
+  def texto_a_numero(cadena) do
+    cadena
+    |> String.trim()
+    |> Float.parse()
+    |> case do
+      {numero, _resto} -> numero
+      :error -> cadena                  #esto es en caso de que depronto me ingresen un entero individual
+                |> String.trim()
+                |> Integer.parse()
+                |> case do
+                  {numero, _resto} -> numero
+                  :error -> {:error, "se espera que ingrese un valor valido"}
+                end
+    end
+  end
 
 
 end
