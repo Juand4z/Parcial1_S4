@@ -10,8 +10,8 @@ defmodule Validacion do
   - lineas: Mapa de lineas de produccion para verificar su existencia.
   """
   def validar_lote(lote, confeccionistas, lineas) do
-    with :ok <- verificar_confeccionista(lote, confeccionistas),
-         :ok <- verificar_linea(lote, lineas),
+    with :ok <- verificar_confeccionista(lote, confeccionistas), #usa patern matching para intentar comparar lo de la derecha con lo de la izquierda, en caso de ser posible continua con el siguiente
+         :ok <- verificar_linea(lote, lineas), #si no es posible retorna lo que sea que retorne el metodo de la derecha en este caso retornaria "{:error, :tipodeerror}
          :ok <- verificar_dia(lote),
          :ok <- verificar_prendas(lote),
          :ok <- verificar_porcentaje_defectos(lote) do
@@ -29,7 +29,7 @@ defmodule Validacion do
 # - 'lote': Mapa que contiene la informacion del lote el cual requiere la clave ':confeccionistas'.
 # - 'confeccionista': Mapa que contiene el codigo de los usando el código de confeccionista como clave.
   defp verificar_confeccionista(lote, confeccionistas) do
-    if Map.has_key?(confeccionistas, Map.get(lote, :confeccionista)) do
+    if Map.has_key?(confeccionistas, Map.get(lote, :confeccionista)) do #como los confeccionistas los converimos de lista de mapas a mapa con clave "codigo del confeccionista", podemos usar Map.has_key? para ver si ese lote si contiene un confeccionista que existe en los datos
       :ok
     else
       {:error, :confeccionista_desconocido}
@@ -46,7 +46,7 @@ defmodule Validacion do
 # - 'lote': Mapa que contiene la información del lote el cual requiere la clave ':linea'
 # - 'lineas': Mapa que contiene los datos de las líneas registradas, usando el código de línea como clave.
   defp verificar_linea(lote, lineas) do
-    if Map.has_key?(lineas, Map.get(lote, :linea)) do
+    if Map.has_key?(lineas, Map.get(lote, :linea)) do #las lineas tambien fueron indexadas para pasarlas de listas de mapas a mapa con clave "id de la lista" y valor la lista entera (un mapa)
       :ok
     else
       {:error, :linea_desconocida}
@@ -62,7 +62,7 @@ defmodule Validacion do
 # ### Parámetros:
 # - 'lote': Mapa que contiene la información del lote el cual requiere la clave ':dia'.
   defp verificar_dia(lote) do
-    dia = Map.get(lote, :dia)
+    dia = Map.get(lote, :dia) #obtener el valor que esta asociado a la clave ":dia" en el mapa "lote"
 
     if dia > 0 and dia < 7 and is_integer(dia) do
       :ok
@@ -100,7 +100,7 @@ defmodule Validacion do
   defp verificar_porcentaje_defectos(lotes) do
     porcentaje = Map.get(lotes, :defectos)
 
-    if porcentaje >= 0 and porcentaje < 101 do
+    if porcentaje >= 0 and porcentaje <= 100 do
       :ok
     else
       {:error, :porcentaje_invalido}
@@ -112,33 +112,33 @@ defmodule Validacion do
 '''
   def validar_lotes(lotes, confeccionistas, lineas) do
     validaciones =
-      Enum.map(lotes, fn a ->
+      Enum.map(lotes, fn a -> #obtengo una lista con elementos conformados por una tupla con {el lote, {:ok, otra vez el lote}} o {el lote, {:error, el tipo de error}}
         {a, validar_lote(a, confeccionistas, lineas)}
       end)
 
     validos =
-      Enum.reduce(validaciones, %{validos: [], invalidos: []}, fn
-        {_lote, {:ok, lote_valido}}, acc ->
-          %{acc | validos: [lote_valido | acc.validos]}
+      Enum.reduce(validaciones, %{validos: [], invalidos: []}, fn #se usa un reduce para acumular mediante un mapa los lotes validos e invalitos
+        {_lote, {:ok, lote_valido}}, acc -> #existen tods funciones anonimas, una para almacenas los lotes validos en una lista y viceversa
+          %{acc | validos: [lote_valido | acc.validos]} #se usa el operador "|" para insertar un elemento al mapa acumulador y la lista de lotes al valor de la clave del mapa acumulador
 
-        # accvalidos lo que hace es que me trae la lista que ya existia desde antes,
-        # para sumarle el nuevo lot ademas represneta que me trae el valor de la clave validos del mapa acc
+        # acc.validos lo que hace es que me trae la lista que ya existia desde antes,
+        # para sumarle el nuevo lote valido ademas represneta que me trae el valor de la clave validos del mapa acc
 
         {lote, {:error, motivo}}, acc ->
-          %{acc | invalidos: [{lote, motivo} | acc.invalidos]}
+          %{acc | invalidos: [{lote, motivo} | acc.invalidos]} # lo mismo pero para los lotes invalidos
       end)
   end
 
   defp parsear_lote_adicional(texto) when is_binary(texto) do
     campos = texto
-    |> String.split(";")
-    |> Enum.map(fn x -> String.trim(x) end)
+    |> String.split(";") #me retorna una lista con los elementos que estaban separados por ";"
+    |> Enum.map(fn x -> String.trim(x) end) #elimina los espacios al principio y al final de cada elemento de la lista
 
-    with [confeccionista, linea, dia_texto, prendas_texto, defectos_texto] <- campos,
-         {:ok, dia} <- Util.texto_a_numero(dia_texto),
-         {:ok, prendas} <- Util.texto_a_numero(prendas_texto),
-         {:ok, defectos} <- Util.texto_a_numero(defectos_texto) do
-      {:ok,
+    with [confeccionista, linea, dia_texto, prendas_texto, defectos_texto] <- campos, #usa patern matching para asignarle un valor a cada variable de la izquierda
+         {:ok, dia} <- Util.texto_a_numero(dia_texto), #uso la funcio del modulo Util para pasar los valores strings a valores numericos
+         {:ok, prendas} <- Util.texto_a_numero(prendas_texto), #esta funcion esta refinada para ser capaz de retornar tanto un entero como un float
+         {:ok, defectos} <- Util.texto_a_numero(defectos_texto) do #la funcion tambien esta preparada para controlarse en caso de un error, retornando ":error, se espera un valor valido" en forma de tupla
+      {:ok, # si todo pasa correctamente me retorna un tupla con {:ok, el nuevo lote}
        %{
          confeccionista: confeccionista,
          linea: linea,
@@ -147,19 +147,19 @@ defmodule Validacion do
          defectos: defectos
        }}
     else
-      _ -> {:error, :formato_invalido}
+      _ -> {:error, :formato_invalido} # si no pasa el proceso correctamente retorna un error controladito
     end
   end
 
-  defp parsear_lote_adicional(_otro), do: {:error, :formato_invalido}
+  defp parsear_lote_adicional(_otro), do: {:error, :formato_invalido} #en caso de que no cumpla la guard me retorna directamente el errorsito
 
   def evaluar_lote_adicional(texto, confeccionistas, lineas) do
     case String.trim(texto) do
-      "" ->  :omitido
+      "" ->  :omitido #en caso de que no escriba nada retorna :omitido para hacer saber que no se ingreso un nuevo lote
 
       contenido ->
-        with {:ok, lote} <- parsear_lote_adicional(contenido) do
-          case validar_lote(lote, confeccionistas, lineas) do
+        with {:ok, lote} <- parsear_lote_adicional(contenido) do #patern matching para asignar el mapa a la variable "lote"
+          case validar_lote(lote, confeccionistas, lineas) do #se usa case para determinar si el lote es valido o es rechazado
             {:ok, lote_valido} -> {:agregado, lote_valido}
             {:error, motivo} -> {:rechazado, lote, motivo}
           end
