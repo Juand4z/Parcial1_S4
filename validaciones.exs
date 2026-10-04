@@ -123,7 +123,6 @@ defmodule Validacion do
         {a, validar_lote(a, confeccionistas, lineas)}
       end)
 
-    validos =
       Enum.reduce(validaciones, %{validos: [], invalidos: []}, fn #se usa un reduce para acumular mediante un mapa los lotes validos e invalitos
         {_lote, {:ok, lote_valido}}, acc -> #existen tods funciones anonimas, una para almacenas los lotes validos en una lista y viceversa
           %{acc | validos: [lote_valido | acc.validos]} #se usa el operador "|" para insertar un elemento al mapa acumulador y la lista de lotes al valor de la clave del mapa acumulador
@@ -147,6 +146,7 @@ defmodule Validacion do
 #
   defp parsear_lote_adicional(texto) when is_binary(texto) do
     campos = texto
+    |> String.trim()
     |> String.split(";") #me retorna una lista con los elementos que estaban separados por ";"
     |> Enum.map(fn x -> String.trim(x) end) #elimina los espacios al principio y al final de cada elemento de la lista
 
