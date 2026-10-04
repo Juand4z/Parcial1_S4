@@ -2,11 +2,11 @@ defmodule Validacion do
   @doc """
   Valida las reglas de negocio de un lote de manera secuencial con la estructura "with".
   Evalua cada condicion en order y se detiene cuando se encuentra con un error:
-  - Retorna la tupla '{:ok, lote}' si cumple con todas las verificaciones
-  - Retorna la tupla '{:error, motivo}' si falla en alguna verificacion delvolviendo el motivo de este
+  - Retorna la tupla '{:ok, lote}' si cumple con todas las verificaciones.
+  - Retorna la tupla '{:error, motivo}' si falla en alguna verificacion delvolviendo el motivo de este.
   ## Parametros
   - lote : Mapa con la informacion de los lotes a verificar
-  - confeccionistas : Mapa con los confeccionistas registrados para verificar su existencia
+  - confeccionistas : Mapa con los confeccionistas registrados para verificar su existencia.
   - lineas: Mapa de lineas de produccion para verificar su existencia.
   """
   def validar_lote(lote, confeccionistas, lineas) do
@@ -19,9 +19,15 @@ defmodule Validacion do
     end
   end
 
-  @doc """
- Verifica que dentro de la lista confeccionista 
-  """
+# Verifica si el confeccionista asignado a un lote existe en la coleccion de confeccionistas.
+## Retorna:
+## - '.ok' si la clave del confeccionista existe en el mapa.
+## - '{:error, :confeccionista_desconocido}' si el confeccionista no existe.
+
+### Parametros:
+### - 'lote': Mapa que contiene la informacion del lote el cual requiere la clave 'confeccionista'.
+### - 'confeccionista': Mapa que contiene el codigo de los confeccionistas el cual se usa como clave.
+
   defp verificar_confeccionista(lote, confeccionistas) do
     if Map.has_key?(confeccionistas, Map.get(lote, :confeccionista)) do
       :ok
@@ -29,6 +35,15 @@ defmodule Validacion do
       {:error, :confeccionista_desconocido}
     end
   end
+
+# Verifica si la linea asignada a un lote  existe dentro de la coleccion lista
+## Retorna:
+## - '.ok' si la clave del lista existe en el mapa.
+## - '{:error, :linea_desconocida}' si la linea no existe.
+
+### Parametros:
+### - 'lote': Mapa que contiene la informacion del lote el cual requiere la clave 'linea'.
+### - 'linea': Mapa que contiene el codigo de las lineas las cuales se usan como clave.
 
   defp verificar_linea(lote, lineas) do
     if Map.has_key?(lineas, Map.get(lote, :linea)) do
