@@ -4,15 +4,21 @@ defmodule Programa do
     lineas= Util.convertir_a_mapa_por(Datos.lineas(), :id)
     lotes_completos= solicitar_lote_add(confeccionistas,lineas)
     |> then(fn resultado-> lotes= Datos.lotes() #meto el lote nuevo a la lista de mapas que contiene los lotes
-      [resultado | lotes]
+      if resultado == {:error, :formato_invalido} do
+        lotes
+      else
+         [resultado | lotes]
+      end
     end)
-    {lotes_validos, lotes_invalidos} = Validacion.validar_lotes(lotes_completos, confeccionistas, lineas)
+    validos_e_invalidos Validacion.validar_lotes(lotes_completos, confeccionistas, lineas)
+    lotes_validos= validos_e_invalidos.validos #lotes validos son una lista de mapas
+    lotes_invalidos= validos_e_invalidos.invalidos
 
     produccion_por_dia= Reportes.produccion_por_dia
 
     liquidaciones= Liquidacion.liquidar_todos(confeccionistas, lotes_validos)
 
-    r1= generar_r1() |> Util.mostrar_mensaje()
+    r1= generar_r1(lotes_invalidos) |> Util.mostrar_mensaje()
     r2= generar_r2() |> Util.mostrar_mensaje()
     r3= generar_r3() |> Util.mostrar_mensaje()
     r4= generar_r4() |> Util.mostrar_mensaje()
@@ -31,11 +37,16 @@ defmodule Programa do
     |> verificar_ingreso
     |> Validacion.evaluar_lote_adicional() #esto me retornara algun tipo de tupla con los datos necesarios, ya sea un :agregado, un :rechazado o un :error
     case resultado do #uso el case para imprimir en consola lo que paso con el lote ingresado
-       {:agregado, _lote} -> Util.mostrar_mensaje("se agrego el lote correctamente")
+       {:agregado, lote} -> Util.mostrar_mensaje("se agrego el lote correctamente")
+            lote
        :omitido -> Util.mostrar_mensaje("omitido")
-       {:rechazado, _lote, motivo} -> Util.mostrar_mensaje("el lote se ingreso correctamente pero fue rechazado por el siguiente motivo: #{motivo}")
+
+       {:rechazado, lote, motivo} -> Util.mostrar_mensaje("el lote se ingreso correctamente pero fue rechazado por el siguiente motivo: #{motivo}")
+            lote
        _ -> Util.mostrar_mensaje("se ingreso un formato invalido")
+            
     end
+
   end
 
   defp verificar_ingreso(mensaje) do #un poquito exagerado este metodo porque el pasersear_lote del modulo Validacion ya verifica que sea binario pero por las dudas tin
