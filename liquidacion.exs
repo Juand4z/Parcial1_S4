@@ -23,20 +23,20 @@ defmodule Liquidacion do
   def alquiler_maquina_descontable(_confeccionista, _dias), do: 0
 
   def liquidar_confeccionista(confeccionista, lotes_validos) do
-    detalle =
+    detalle = #detalle representa un mapa que se define en la funcion detalle_del_dia() con diferentes claves que se ven en esa funcion
       lotes_validos
-      |> Enum.group_by(fn lote -> lote.dia end)
-      |> Enum.sort_by(fn {dia, _lotes} -> dia end)
-      |> Enum.map(fn {dia, lotes_del_dia} -> detalle_del_dia(dia, lotes_del_dia) end)
+      |> Enum.group_by(fn lote -> lote.dia end) # Se agrupan por dia en otro mapa donde el dia representara la clave y un alista de lotes el valor
+      |> Enum.sort_by(fn {dia, _lotes} -> dia end) #Se ordenan teniendo en cuenta el dia es decir cornologicamente
+      |> Enum.map(fn {dia, lotes_del_dia} -> detalle_del_dia(dia, lotes_del_dia) end) #Paso el ultimo mapa obtenido a un Enum.map para pasar cada dia por la funcion detalle_del_dia()
 
-    bruto = Enum.map(detalle, fn detalle_dia -> Map.get(detalle_dia, :valor_lotes) end) |> Enum.sum()
-    bonificaciones = Enum.map(detalle, fn detalle_dia -> Map.get(detalle_dia, :bonificacion) end) |> Enum.sum()
-    alquiler = descuento_alquiler(confeccionista, length(detalle))
+    bruto = Enum.map(detalle, fn detalle_dia -> Map.get(detalle_dia, :valor_lotes) end) |> Enum.sum() #reprensenta el valor bruto de los lotes en un dia sumando el valor de los lotes del confeccionista sin importar el dia
+    bonificaciones = Enum.map(detalle, fn detalle_dia -> Map.get(detalle_dia, :bonificacion) end) |> Enum.sum() #representa el valore de la bonificacion del confeccionista sumando 18k por cada dia que supere 120 prendas
+    alquiler = alquiler_maquina_descontable(confeccionista, length(detalle)) #calcula cuanto fue el costo del alquiler para descontarselo luego al confeccionista
 
     %{
-      codigo: confeccionista.codigo,
+      codigo: confeccionista.codigo, #confeccionista es un mapa por eso se usa .codigo, .nombre, etc
       nombre: confeccionista.nombre,
-      prendas: Enum.map(detalle, fn x -> Map.get(x, :prendas) end) |> Enum.sum(),
+      prendas: Enum.map(detalle, fn x -> Map.get(x, :prendas) end) |> Enum.sum(), #recorre la lista de mapas "detalle" para sumar las prendas de cada dia que tuvo un confeccionista
       bruto: bruto,
       bonificaciones: bonificaciones,
       alquiler: alquiler,
@@ -59,13 +59,13 @@ defmodule Liquidacion do
   end
 
   def liquidar_todos(confeccionistas, lotes_validos) do
-    grupos = Enum.group_by(lotes_validos, fn lote -> lote.confeccionista end)
+    grupos = Enum.group_by(lotes_validos, fn lote -> lote.confeccionista end) #crea un mapa con clave "el codigo del confeccionista" y valor "los lotes validos de ese confeccionista"
 
     confeccionistas
-    |> Map.values()
-    |> Enum.sort_by(fn confeccionista -> confeccionista.codigo end)
-    |> Enum.map(fn confeccionista ->
-      liquidar_confeccionista(confeccionista, Map.get(grupos, confeccionista.codigo, []))
+    |> Map.values() #convierte el mapa de confeccionistas en una lista para poder recorrerla
+    |> Enum.sort_by(fn confeccionista -> confeccionista.codigo end) #recorre dicha lista para ordenarla segun el codigo del confeccionista
+    |> Enum.map(fn confeccionista -> #liquida cada confeccionista, resultando una lista de mapas, siendo cada mapa los del confeccionista junto con los datos de su liquidacion
+      liquidar_confeccionista(confeccionista, Map.get(grupos, confeccionista.codigo, [])) #se usar Map.get/3 para q en caso de que un confeccionista no halla trabajo o no tenga lotes validos, la variable lotes_validos no tome el valor de "nil", sino que le asigne una lista vacia "[]" para hacer las operaciones matematicas sin problemas como Enum.sum([]) = 0
     end)
   end
 end
