@@ -1,4 +1,14 @@
 defmodule Validacion do
+  @doc """
+  Valida las reglas de negocio de un lote de manera secuencial con la estructura "with".
+  Evalua cada condicion en order y se detiene cuando se encuentra con un error:
+  - Retorna la tupla '{:ok, lote}' si cumple con todas las verificaciones
+  - Retorna la tupla '{:error, motivo}' si falla en alguna verificacion delvolviendo el motivo de este
+  ## Parametros
+  - lote : Mapa con la informacion de los lotes a verificar
+  - confeccionistas : Mapa con los confeccionistas registrados para verificar su existencia
+  - lineas: Mapa de lineas de produccion para verificar su existencia.
+  """
   def validar_lote(lote, confeccionistas, lineas) do
     with :ok <- verificar_confeccionista(lote, confeccionistas),
          :ok <- verificar_linea(lote, lineas),
@@ -9,6 +19,9 @@ defmodule Validacion do
     end
   end
 
+  @doc """
+ Verifica que dentro de la lista confeccionista 
+  """
   defp verificar_confeccionista(lote, confeccionistas) do
     if Map.has_key?(confeccionistas, Map.get(lote, :confeccionista)) do
       :ok
