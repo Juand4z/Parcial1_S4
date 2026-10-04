@@ -28,7 +28,7 @@ defmodule Programa do
     r8= generar_r8() |> Util.mostrar_mensaje()
 
 
-    #faltarian los rankins y la combinacion pero eso lo hacemos cuando lleguemos al punto c
+    #faltarian los rankings y la combinacion pero eso lo hacemos cuando lleguemos al punto c
     comprobante= solicitar_comprobante() |> Util.mostrar_mensaje()
   end
 
@@ -44,7 +44,7 @@ defmodule Programa do
        {:rechazado, lote, motivo} -> Util.mostrar_mensaje("el lote se ingreso correctamente pero fue rechazado por el siguiente motivo: #{motivo}")
             lote
        _ -> Util.mostrar_mensaje("se ingreso un formato invalido")
-            
+
     end
 
   end
