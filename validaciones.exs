@@ -20,14 +20,14 @@ defmodule Validacion do
   end
 
 # Verifica si el confeccionista asignado a un lote existe en la coleccion de confeccionistas.
-## Retorna:
-## - '.ok' si la clave del confeccionista existe en el mapa.
-## - '{:error, :confeccionista_desconocido}' si el confeccionista no existe.
-
-### Parametros:
-### - 'lote': Mapa que contiene la informacion del lote el cual requiere la clave 'confeccionista'.
-### - 'confeccionista': Mapa que contiene el codigo de los confeccionistas el cual se usa como clave.
-
+#
+# ## Retorna:
+# - '.ok' si la clave del confeccionista existe en el mapa.
+# - '{:error, :confeccionista_desconocido}' si el confeccionista no existe.
+#
+# ### Parametros:
+# - 'lote': Mapa que contiene la informacion del lote el cual requiere la clave ':confeccionistas'.
+# - 'confeccionista': Mapa que contiene el codigo de los usando el código de confeccionista como clave.
   defp verificar_confeccionista(lote, confeccionistas) do
     if Map.has_key?(confeccionistas, Map.get(lote, :confeccionista)) do
       :ok
@@ -36,15 +36,15 @@ defmodule Validacion do
     end
   end
 
-# Verifica si la linea asignada a un lote  existe dentro de la coleccion lista
-## Retorna:
-## - '.ok' si la clave del lista existe en el mapa.
-## - '{:error, :linea_desconocida}' si la linea no existe.
-
-### Parametros:
-### - 'lote': Mapa que contiene la informacion del lote el cual requiere la clave 'linea'.
-### - 'linea': Mapa que contiene el codigo de las lineas las cuales se usan como clave.
-
+# Verifica si la línea asignada a un lote existe dentro de la colección de líneas.
+#
+# ## Retorna:
+# - ':ok' si la clave de la línea existe en el mapa.
+# - '{:error, :linea_desconocida}' si la línea no existe.
+#
+# ### Parámetros:
+# - 'lote': Mapa que contiene la información del lote el cual requiere la clave ':linea'
+# - 'lineas': Mapa que contiene los datos de las líneas registradas, usando el código de línea como clave.
   defp verificar_linea(lote, lineas) do
     if Map.has_key?(lineas, Map.get(lote, :linea)) do
       :ok
@@ -52,6 +52,15 @@ defmodule Validacion do
       {:error, :linea_desconocida}
     end
   end
+
+# Verifica si el dia esta dentro del rango valido
+#
+# ## Retorna:
+# - ':ok' si el dia esta dentro de el rango permitido (1 a 6).
+# - '{:error, :dia_invalido}' si el dia es mayor o igual 7 o menor o igual a 0.
+#
+# ### Parámetros:
+# - 'lote': Mapa que contiene la información del lote el cual requiere la clave ':dia'.
 
   defp verificar_dia(lote) do
     dia = Map.get(lote, :dia)
