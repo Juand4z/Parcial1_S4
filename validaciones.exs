@@ -82,7 +82,7 @@ defmodule Validacion do
     end
   end
 
-  defp verificar_porcentaje_defectos(lotes) do
+  defp verificar_porcentaje_defectos(lotes) do #recibe un mapa de lotes, lo indexamos en el main
     porcentaje = Map.get(lotes, :defectos)
 
     if porcentaje >= 0 and porcentaje <= 100 do
@@ -92,13 +92,12 @@ defmodule Validacion do
     end
   end
 
-  def validar_lotes(lotes, confeccionistas, lineas) do
+  def validar_lotes(lotes, confeccionistas, lineas) do #recibe lotes como una lista de mapas
     validaciones =
       Enum.map(lotes, fn a -> #obtengo una lista con elementos conformados por una tupla con {el lote, {:ok, otra vez el lote}} o {el lote, {:error, el tipo de error}}
         {a, validar_lote(a, confeccionistas, lineas)}
       end)
 
-    validos =
       Enum.reduce(validaciones, %{validos: [], invalidos: []}, fn #se usa un reduce para acumular mediante un mapa los lotes validos e invalitos
         {_lote, {:ok, lote_valido}}, acc -> #existen tods funciones anonimas, una para almacenas los lotes validos en una lista y viceversa
           %{acc | validos: [lote_valido | acc.validos]} #se usa el operador "|" para insertar un elemento al mapa acumulador y la lista de lotes al valor de la clave del mapa acumulador
@@ -113,6 +112,7 @@ defmodule Validacion do
 
   defp parsear_lote_adicional(texto) when is_binary(texto) do
     campos = texto
+    |> String.trim()
     |> String.split(";") #me retorna una lista con los elementos que estaban separados por ";"
     |> Enum.map(fn x -> String.trim(x) end) #elimina los espacios al principio y al final de cada elemento de la lista
 
