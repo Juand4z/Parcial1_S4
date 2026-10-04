@@ -1,4 +1,8 @@
 defmodule Liquidacion do
+  @doc """
+  Funcion que define el valor de un lote segun la cantidad de prendas y porcentaje de defectos
+  Retorna un valor String
+  """
   def valor_lote(%{prendas: prendas, defectos: defectos}) do
     prendas * 3200 * ajuste_defecto(defectos)
   end
