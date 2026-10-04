@@ -107,9 +107,16 @@ defmodule Validacion do
     end
   end
 
-@doc'''
-
-'''
+@doc"""
+ Procesa una lista de lotes, los valida individualmente y los clasifica en validos o invalidos
+  ## Retorna:
+  - ':validos []' : Lista de mapas con los lotes que pasaron las verificaciones anteriores
+  - ':invalidos []' : Lista de tuplas '{lote, motivo}' con los lotes rechazados y su error.
+  Parametros:
+  lotes : Lista de mapas que contiene los lotes (mapas) a validas.
+  confeccionistas: Mapa que contiene los confeccionistas registrados.
+  lineas: Mapa que contiene las lineas de produccion registradas.
+"""
   def validar_lotes(lotes, confeccionistas, lineas) do
     validaciones =
       Enum.map(lotes, fn a -> #obtengo una lista con elementos conformados por una tupla con {el lote, {:ok, otra vez el lote}} o {el lote, {:error, el tipo de error}}
@@ -129,13 +136,22 @@ defmodule Validacion do
       end)
   end
 
+# Funcion que convierte una cadena de texto en un mapa estrucurado
+#
+# ## Retorna:
+# - '{:ok, lote}' : Todos los parametros fueron convertidos y parseados correctamente
+# - '{:error, formato_invalido}' : Algun parametro no estaba escrito de manera valida
+#
+# ### Parametros:
+# - 'texto': Cadena de texto separando cada elemento con ';'
+#
   defp parsear_lote_adicional(texto) when is_binary(texto) do
     campos = texto
     |> String.split(";") #me retorna una lista con los elementos que estaban separados por ";"
     |> Enum.map(fn x -> String.trim(x) end) #elimina los espacios al principio y al final de cada elemento de la lista
 
     with [confeccionista, linea, dia_texto, prendas_texto, defectos_texto] <- campos, #usa patern matching para asignarle un valor a cada variable de la izquierda
-         {:ok, dia} <- Util.texto_a_numero(dia_texto), #uso la funcio del modulo Util para pasar los valores strings a valores numericos
+         {:ok, dia} <- Util.texto_a_numero(dia_texto), #uso la funcion del modulo Util para pasar los valores strings a valores numericos
          {:ok, prendas} <- Util.texto_a_numero(prendas_texto), #esta funcion esta refinada para ser capaz de retornar tanto un entero como un float
          {:ok, defectos} <- Util.texto_a_numero(defectos_texto) do #la funcion tambien esta preparada para controlarse en caso de un error, retornando ":error, se espera un valor valido" en forma de tupla
       {:ok, # si todo pasa correctamente me retorna un tupla con {:ok, el nuevo lote}
@@ -151,8 +167,26 @@ defmodule Validacion do
     end
   end
 
-  defp parsear_lote_adicional(_otro), do: {:error, :formato_invalido} #en caso de que no cumpla la guard me retorna directamente el errorsito
+  # Funcion de respaldo para el proceso de parseo, captura cualquier otro argumento que no haya superado los guardas anteriores.
+  # Retorna un error controlado con formato '{:error, :formato_invalido}'.
+  # ## Parametros:
+  # '_otro': Cualquier otro tipo de dato que no sea una cadena de texto.
+    defp parsear_lote_adicional(_otro), do: {:error, :formato_invalido} #en caso de que no cumpla la guard me retorna directamente el errorsito
 
+
+@doc """
+Funcion que evalua si un lote se omite por falta da informacion añadida o se parsea segun la informacion añadida con la estructura case
+
+Retorna:
+- : omitido : No se escribe nada (espacio en blanco).
+- {:agregado, lote_valido} : Si el lote fue parceado y validado correctamente
+- {:rechazado, lote, :motivo} :Si no cumple con las condiciones esperadas.
+
+Parametros:
+- 'texto' : Cadena de texto con los datos del lote a evaluar.
+- ' confeccionistas' : Mapa con los confeccionistas verificados y validados.
+- 'lineas' : Mapacon las lineas verificadas y validadas.
+"""
   def evaluar_lote_adicional(texto, confeccionistas, lineas) do
     case String.trim(texto) do
       "" ->  :omitido #en caso de que no escriba nada retorna :omitido para hacer saber que no se ingreso un nuevo lote
