@@ -61,7 +61,6 @@ defmodule Validacion do
 #
 # ### Parámetros:
 # - 'lote': Mapa que contiene la información del lote el cual requiere la clave ':dia'.
-
   defp verificar_dia(lote) do
     dia = Map.get(lote, :dia)
 
@@ -72,6 +71,14 @@ defmodule Validacion do
     end
   end
 
+# Verifica si las prendas estan dentro del rango valido.
+#
+# ## Retorna:
+# - ':ok' si las prendas son mayores que 0 y menores que 181 (rango de 1 a 180).
+# - '{:error, :prendas_fuera_de_rango}' si se ingresa un valor menor que 0, mayor o igual a 181 o un valor que no sea un entero.
+#
+# ### Parámetros:
+# - 'lote': Mapa que contiene la información del lote el cual requiere la clave ':prendas'.
   defp verificar_prendas(lote) do
     prendas = Map.get(lote, :prendas)
 
@@ -82,6 +89,14 @@ defmodule Validacion do
     end
   end
 
+# Verifica si el porcentaje de defectos se encuentra en el rango valido.
+#
+# ## Retorna:
+# - ':ok' si se encuentran en el rango de 0 a 100.
+# - '{:error, :porcentaje_invalido}' si se ingresa un valor menor a 0 o mayor a 100.
+#
+# ### Parámetros:
+# - 'lotes': Mapa que contiene la información de los lotes el cual requiere de las claves ':defectos'.
   defp verificar_porcentaje_defectos(lotes) do
     porcentaje = Map.get(lotes, :defectos)
 
@@ -92,6 +107,9 @@ defmodule Validacion do
     end
   end
 
+@doc'''
+
+'''
   def validar_lotes(lotes, confeccionistas, lineas) do
     validaciones =
       Enum.map(lotes, fn a ->
