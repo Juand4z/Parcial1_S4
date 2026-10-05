@@ -83,13 +83,13 @@ Parametros:
   defp productividad(_prendas, _puestos), do: 0.0
 
   @doc """
-R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica si se alcanzo la meta diaria todos los dias, almenos un dia o ningun dia.
- Si hay dias sin lotes validos aparecen en 0.
+  Funcion que calcula las prendas producidas por el taller en cada uno de los 6 dias de produccion.
+  Los dias sin lotes validos valen 0.
 
- Retorna: Un String por cada dia con las prendas y si alcanzo la meta diarias.
+  Retorna: Un mapa con la estructura %{dia,  prendas}, con las claves del 1 al 6.
 
- Parametros:
- - 'lotes_validos': Lista de mapas con los lotes ya verificados.
+  Parametros:
+  - 'lotes_validos' : Lista de mapas con los lotes que pasaron la validacion.
   """
   def produccion_por_dia(lotes_validos) do
     # inicializa un mapa con claves "dias del uno al seis"  y valor cero en todas sus claves
@@ -103,8 +103,15 @@ R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica 
   end
 
   @doc """
-  R3 (texto). Recibe el mapa `%{dia => prendas}` que entrega `produccion_por_dia/1`
-  y devuelve el texto del reporte, indicando si se alcanzó la meta cada día.
+  R3. Funcion que genera el reporte de las prendas producidas en cada uno de los dias, indicando si se alcanzo
+  la meta diaria. Al final indica si la meta se alcanzo todos los dias, al menos un dia o ningun dia.
+
+  Retorna:
+  Un String con el titulo del reporte, un bloque por cada dia con sus prendas y si se alcanzo la meta,
+  y al final el estado de la meta (todos los dias o al menos un dia).
+
+  Parametros:
+  - 'produccion' : Mapa %{dia, prendas} que retorna produccion_por_dia.
   """
   def reporte_r3(produccion) do
     # organizo todo en una lista de mapas (ordenada por dia), donde cada mapa contiene la informacion necesaria para el mensaje
@@ -135,7 +142,6 @@ R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica 
 
   end
 
-
   defp parsear_meta(meta) do
     if meta do
       "lograda"
@@ -159,8 +165,12 @@ R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica 
 
 
   @doc """
-  R4. Ordena las liquidaciones por pago neto de mayor a menor y las
-  numera. Devuelve una lista de tuplas `{liquidacion, posicion}`.
+  Funcion que ordena las liquidaciones por pago neto de mayor a menor y las numera. Es la base del reporte R4.
+
+  Retorna: Una lista de tuplas {liquidacion, posicion}, donde la posicion empieza en 1.
+
+  Parametros:
+  - 'liquidaciones' : Lista de mapas que retorna Liquidacion.liquidar_todos, uno por confeccionista.
   """
   def liquidacion_ordenada(liquidaciones) do
     liquidaciones
@@ -170,8 +180,15 @@ R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica 
   end
 
   @doc """
-  R4 (texto). Recibe la lista de tuplas `{liquidacion, posicion}` que entrega
-  `liquidacion_ordenada/1` y devuelve el texto del reporte.
+  R4. Funcion que genera el reporte de la liquidacion de todos los confeccionistas, numerada y ordenada
+  por pago neto de mayor a menor.
+
+  Retorna:
+  Un String con el titulo del reporte y un confeccionista con su posicion, nombre, codigo,
+  prendas, pago bruto, bonificaciones, costo del alquiler y pago neto.
+
+  Parametros:
+  - 'liquidaciones_ordenadas' : Lista de tuplas {liquidacion, posicion} que retorna liquidacion_ordenada.
   """
   def reporte_r4(liquidaciones_ordenadas) do
     lineas =
@@ -211,12 +228,6 @@ R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica 
     "=== R5. Confeccionista lider por dia ===\n" <> info1 <> "\n" <> info2
   end
 
-  # Funcion que calcula el lider de cada uno de los 6 dias.
-  #
-  # ## Retorna: Lista de tuplas {dia, [codigos], prendas}. Un dia sin lotes queda {dia, [], 0}.
-  #
-  # ### Parametros:
-  # - 'lotes_validos' : Lista de mapas con los lotes validos.
   defp lideres_por_dia(lotes_validos) do
     # mapa con clave "dia" y valor "lista de lotes de ese dia"
     por_dia = Enum.group_by(lotes_validos, fn lote -> lote.dia end)
@@ -225,13 +236,6 @@ R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica 
     Enum.map(1..6, fn dia -> lider_del_dia(dia, Map.get(por_dia, dia, [])) end)
   end
 
-  # Funcion que determina el o los lideres de un dia usando case.
-  #
-  # ## Retorna: {dia, [codigos empatados], prendas_maximas} o {dia, [], 0} si no hubo lotes.
-  #
-  # ### Parametros:
-  # - 'dia' : Numero del dia (1 a 6).
-  # - 'lotes_dia' : Lista de mapas con los lotes validos de ese dia.
   defp lider_del_dia(dia, lotes_dia) do
     # lista de tuplas {codigo, prendas del dia}, sumando todas las lineas del confeccionista
     totales =
@@ -259,26 +263,12 @@ R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica 
     end
   end
 
-  # Funcion que arma el texto de un dia, usa pattern matching en los argumentos.
-  #
-  # ## Retorna: String con el lider del dia o el aviso de que no hubo lotes validos.
-  #
-  # ### Parametros:
-  # - 'tupla' : {dia, codigos, prendas} generada por lider_del_dia/2.
-  # - 'confeccionistas' : Mapa de confeccionistas.
   defp linea_lider_dia({dia, [], _prendas}, _confeccionistas),
     do: "El dia #{dia} no tuvo lotes validos"
 
   defp linea_lider_dia({dia, codigos, prendas}, confeccionistas),
     do: "El dia #{dia} lidero #{nombres(codigos, confeccionistas)} con #{prendas} prendas"
 
-  # Funcion que cuenta cuantos dias fue primero cada confeccionista y arma el mensaje final.
-  #
-  # ## Retorna: String con quien(es) ocuparon el primer lugar mas dias y cuantos dias.
-  #
-  # ### Parametros:
-  # - 'lideres' : Lista de tuplas {dia, codigos, prendas}.
-  # - 'confeccionistas' : Mapa de confeccionistas.
   defp resumen_lider_semana(lideres, confeccionistas) do
     # junto los codigos de todos los dias (con empates) y cuento cuantas veces aparece cada uno
     victorias =
@@ -305,26 +295,15 @@ R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica 
     end
   end
 
-  # Funcion que convierte una lista de codigos en un string "Nombre (codigo)" separado por comas.
-  #
-  # ## Retorna: String con los nombres y codigos.
-  #
-  # ### Parametros:
-  # - 'codigos' : Lista de codigos de confeccionistas (ya validados, por eso existen en el mapa).
-  # - 'confeccionistas' : Mapa de confeccionistas.
+
   defp nombres(codigos, confeccionistas) do
     codigos
     |> Enum.map(fn codigo -> "#{Map.get(confeccionistas, codigo).nombre} (#{codigo})" end)
     |> Enum.join(", ")
   end
 
-  # ------------------------------------------------------------------
-  # R6. Mejor calidad (defectos ponderados)
-  # ------------------------------------------------------------------
-
   @doc """
-  R6. Funcion que genera el reporte del confeccionista con mejor calidad, es decir,
-  el menor porcentaje de defectos ponderado por prendas entre quienes tengan al menos 3 lotes validos.
+  R6. Funcion que genera el reporte del confeccionista con el menor porcentaje de defectos ponderado por prendas entre quienes tengan al menos 3 lotes validos.
 
   Retorna: Un string con el titulo y el ganador (todos los empatados si los hay),
   o un aviso si nadie cumple el minimo de 3 lotes validos.
@@ -365,22 +344,13 @@ R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica 
     end
   end
 
-  # Funcion que calcula el porcentaje de defectos ponderado por prendas.
-  #
-  # ## Retorna: Un flotante con suma(defectos * prendas) / suma(prendas).
-  #
-  # ### Parametros:
-  # - 'lotes' : Lista de mapas con los lotes validos de un confeccionista (prendas siempre >= 1, no divide por cero).
+
   defp porcentaje_ponderado(lotes) do
     suma_ponderada = lotes |> Enum.map(fn lote -> lote.defectos * lote.prendas end) |> Enum.sum()
     total_prendas = lotes |> Enum.map(fn lote -> lote.prendas end) |> Enum.sum()
 
     suma_ponderada / total_prendas
   end
-
-  # ------------------------------------------------------------------
-  # R7. Total pagado y costo promedio por prenda
-  # ------------------------------------------------------------------
 
   @doc """
   R7. Funcion que genera el reporte del total pagado por el taller en la semana
@@ -390,7 +360,7 @@ R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica 
   validas indica que el promedio no puede calcularse.
 
   Parametros:
-  - 'liquidaciones' : Lista de mapas que retorna Liquidacion.liquidar_todos/2.
+  - 'liquidaciones' : Lista de mapas que retorna Liquidacion.liquidar_todos.
   """
   def costo_promedio_r7(liquidaciones) do
     # el taller paga el neto de cada confeccionista
@@ -409,15 +379,11 @@ R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica 
       "Total pagado por el taller: $#{Util.formater(total_pagado)}\n" <> promedio
   end
 
-  # ------------------------------------------------------------------
-  # R8. Confeccionistas presentes en todas las lineas
-  # ------------------------------------------------------------------
-
   @doc """
   R8. Funcion que genera el reporte de los confeccionistas que elaboraron al menos
   un lote valido en todas las lineas de produccion.
 
-  Retorna: Un string con el titulo y la lista de confeccionistas, o un aviso si no hay ninguno.
+  Retorna: Un string con el titulo y la lista de confeccionistas o un aviso si no hay ninguno.
 
   Parametros:
   - 'lotes_validos' : Lista de mapas con los lotes validados.
