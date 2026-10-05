@@ -138,4 +138,9 @@ defmodule Reportes do
     |> Enum.join("\n")
   end
 
+  def confeccionista_mas_prendas(liquidaciones) do
+    liquidaciones
+    |> Enum.sort_by()
+  end
+
 end
