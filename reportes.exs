@@ -1,5 +1,14 @@
 defmodule Reportes do
-  # R1
+@doc """
+R1. Funcion que genera el reporte de los lotes rechazados junto a su motivo y la cantidad de rechazados por motivo.
+
+Retorna:
+Un String por cada lote rechazado con su respectivo confeccionista y el motivo.
+Un String por cada motivo con la cantidad de veces que paso.
+
+Parametros:
+'lotes_rechazados' : Lista de tuplas {lote, motivo} con los lotes que no pasaron la validacion.
+"""
   def rechazados_r1(lotes_rechazados) do
     # me retornara un mapa con clave "motivo del rechazo" y valor "la cantidad de rechazos por ese motivo"
     frecuencias_motivos = Enum.frequencies_by(lotes_rechazados, fn {_lote, motivo} -> motivo end)
@@ -19,9 +28,15 @@ defmodule Reportes do
   end
 
   @doc """
-  R2. Devuelve una lista de mapas `%{id, nombre, puestos, prendas, productividad}`
-  ordenada de mayor a menor productividad (prendas / puestos). Las líneas
-  sin lotes válidos aparecen con cero prendas.
+  R2. Funcion que genera el reporte de las prendas elaboradas por cada linea de produccion y su productividad semanal ordenados de mayor a menor.
+      Si la linea no tiene lotes validos aparecen 0 prendas.
+
+    Retorna:
+    Un string por cada linea de produccion, con nombre, id ,puestos, prendas , productividad (prendas/puestos).
+
+    Parametros:
+    'lotes_validos' : Lista de mapas con los lotes que pasaron la validacion.
+    'lineas' : Mapa que contiene el id de la linea como clave y el mapa de la linea como valor.
   """
   def prendas_por_linea_r2(lotes_validos, lineas) do
     # se agrupan en un mapa con clave "codigo de la linea" y valor "el lote que tiene esa linea"
@@ -68,9 +83,13 @@ defmodule Reportes do
   defp productividad(_prendas, _puestos), do: 0.0
 
   @doc """
-  R3 (calculo). Devuelve el mapa `%{dia => prendas}` con los 6 días de producción
-  (los días sin lotes válidos valen 0). Es la base de R3 y de
-  `combinar_talleres/2`.
+R3. Genera el reporte de las prendas producidas en cada uno de los dias, indica si se alcanzo la meta diaria todos los dias, almenos un dia o ningun dia.
+ Si hay dias sin lotes validos aparecen en 0.
+
+ Retorna: Un String por cada dia con las prendas y si alcanzo la meta diarias.
+
+ Parametros:
+ - 'lotes_validos': Lista de mapas con los lotes ya verificados.
   """
   def produccion_por_dia(lotes_validos) do
     # inicializa un mapa con claves "dias del uno al seis"  y valor cero en todas sus claves
@@ -164,10 +183,6 @@ defmodule Reportes do
 
     "\n\n----------R4----------\n#{lineas}"
   end
-
-  # ------------------------------------------------------------------
-  # R5. Confeccionista lider por dia
-  # ------------------------------------------------------------------
 
   @doc """
   R5. Funcion que genera el reporte del confeccionista que produjo mas prendas cada dia.
