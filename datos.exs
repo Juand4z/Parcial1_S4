@@ -24,7 +24,7 @@ defmodule Datos do
       %{confeccionista: "C01", linea: "L1", dia: 1, prendas: 70, defectos: 1.5},
       %{confeccionista: "C01", linea: "L2", dia: 1, prendas: 55, defectos: 7},
       %{confeccionista: "C02", linea: "L2", dia: 2, prendas: 55, defectos: 20},
-      %{confeccionista: "C03", linea: "L2", dia: 3, prendas: 55, defectos: 6}
+      %{confeccionista: "C06", linea: "L2", dia: 3, prendas: 55, defectos: 6}
       # ...
     ]
   end

@@ -6,16 +6,16 @@ defmodule Reportes do
 
     info1 =
       Enum.map(lotes_rechazados, fn {lote, motivo} ->
-        "El lote del confeccionista #{lote.confeccionista} fue rechazado por #{motivo}"
+        "Lote asociado al confeccionista: #{lote.confeccionista}, fue rechazado por el error: #{motivo}\n"
       end)
 
     # Enum.map sobre un mapa entrega tuplas {clave, valor}, por eso el patron es {motivo, cantidad}
     info2 =
       Enum.map(frecuencias_motivos, fn {motivo, cantidad} ->
-        "El motivo de rechazo #{motivo}, ocurrio #{cantidad} veces"
+        "El motivo de rechazo: #{motivo}, ocurrio: #{cantidad} veces\n"
       end)
 
-    Enum.join(info1, "\n") <> "\n" <> Enum.join(info2, "\n")
+    "\n\n----------R1----------\n#{(Enum.join(info1, "\n")<>"\n"<>Enum.join(info2, "\n"))}"
   end
 
   @doc """
@@ -27,6 +27,7 @@ defmodule Reportes do
     # se agrupan en un mapa con clave "codigo de la linea" y valor "el lote que tiene esa linea"
     grupos = Enum.group_by(lotes_validos, fn lote -> lote.linea end)
 
+    resultado =
     lineas
     # retorna una lista de mapas, donde cada mapa es una linea
     |> Map.values()
@@ -50,10 +51,13 @@ defmodule Reportes do
     |> Enum.sort_by(fn linea -> linea.productividad end, :desc)
     # retorna una lista de strings donde cada elemento es la informacion de una linea acomodada en mensaje
     |> Enum.map(fn linea ->
-      "La linea #{linea.nombre} con id #{linea.id} tiene #{linea.puestos} puestos y tiene #{linea.prendas} en total, con una productividad de #{linea.productividad} prendas por puesto"
+      "Linea #{linea.nombre}\n    id: #{linea.id}\n    puestos: #{linea.puestos}\n    prendas totales: #{linea.prendas}\n    productividad: #{linea.productividad} prendas/puesto\n"
     end)
     # fusiono toda la lista en un solo string, separo cada elemento de la anterior lista con un salto de linea "\n"
     |> Enum.join("\n")
+
+
+    "\n\n----------R2----------\n#{resultado}"
   end
 
   # guarda que mide la productividad de una linea en prendas por puesto (prendas/puesto)
@@ -94,9 +98,9 @@ defmodule Reportes do
 
     info2 =
       case al_menos_un_dia(info1) do
-        :todos -> "\nSe alcanzo la meta todos los dias"
-        :alguno -> "\nSe alcanzo la meta al menos un dia"
-        :ninguno -> "\nNo se alcanzo la meta ningun dia"
+        :todos -> "    meta todos los dias: lograda\n    meta almenos un dia: lograda"
+        :alguno -> "    meta todos los dias: fracasada\n    meta almenos un dia: lograda"
+        :ninguno -> "    meta todos los dias: fracasada\n    meta almenos un dia: fracasada"
       end
 
     # junto todo en un string y separo los elementos por un salto de linea.
@@ -104,25 +108,26 @@ defmodule Reportes do
     lineas =
       info1
       |> Enum.map(fn x ->
-        if x.meta do
-          # si la meta es true, si se alcanzo y asigna un elemento a lista que se esta generando con este mensaje
-          "el dia #{x.dia} se obtuvieron #{x.prendas} y si se alcanzo la meta"
-        else
-          # caso contraio pasa esto
-          "el dia #{x.dia} se obtuvieron #{x.prendas} y no se alcanzo la meta"
-        end
+        "Dia #{x.dia}:\n    prendas: #{x.prendas}\n    meta: #{parsear_meta(x.meta)}\n"
       end)
       |> Enum.join("\n")
 
-    lineas <> info2
+    "\n\n----------R3----------\n#{lineas}#{info2}"
+
   end
 
-  @doc """
-  Indica si la producción de un día alcanza la meta diaria del taller.
-  """
-  def meta_alcanzada?(prendas), do: prendas >= 600
 
-  def al_menos_un_dia(mapa) do
+  defp parsear_meta(meta) do
+    if meta do
+      "lograda"
+    else
+      "fracasada"
+    end
+  end
+
+  defp meta_alcanzada?(prendas), do: prendas >= 600
+
+  defp al_menos_un_dia(mapa) do
     todos = Enum.all?(mapa, fn %{meta: meta} -> meta == true end) #miro si todos los dias se alcanzo la meta
     ninguno = Enum.any?(mapa, fn %{meta: meta} -> meta == true end)#miro si ningun dia se alcanzo la meta
 
@@ -133,9 +138,6 @@ defmodule Reportes do
     end
   end
 
-  # ------------------------------------------------------------------
-  # R4. Liquidación ordenada
-  # ------------------------------------------------------------------
 
   @doc """
   R4. Ordena las liquidaciones por pago neto de mayor a menor y las
@@ -153,10 +155,13 @@ defmodule Reportes do
   `liquidacion_ordenada/1` y devuelve el texto del reporte.
   """
   def reporte_r4(liquidaciones_ordenadas) do
+    lineas =
     liquidaciones_ordenadas
-    |> Enum.map(fn {x, posicion} ->
-      "#{posicion}. Confeccionista #{x.nombre} con codigo #{x.codigo}, prendas #{x.prendas}, pago bruto #{x.bruto}, bonificaciones #{x.bonificaciones}, costo alquiler #{x.alquiler}, pago neto #{x.neto}"
+    |> Enum.map(fn {x,posicion} ->
+      "#{posicion}. Confeccionista #{x.nombre}\n    codigo: #{x.codigo}\n    prendas: #{x.prendas}\n    pago bruto: #{x.bruto}\n    bonificaciones: #{x.bonificaciones}\n    costo alquiler: #{x.alquiler}\n    pago neto: #{x.neto}\n"
     end)
     |> Enum.join("\n")
+
+    "\n\n----------R4----------\n#{lineas}"
   end
 end
