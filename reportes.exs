@@ -76,7 +76,7 @@ Parametros:
     |> Enum.sort_by(fn linea -> linea.productividad end, :desc)
     # retorna una lista de strings donde cada elemento es la informacion de una linea acomodada en mensaje
     |> Enum.map(fn linea ->
-      "Linea #{linea.nombre}\n    id: #{linea.id}\n    puestos: #{linea.puestos}\n    prendas totales: #{linea.prendas}\n    productividad: #{linea.productividad} prendas/puesto\n"
+      "Linea #{linea.nombre}\n    id: #{linea.id}\n    puestos: #{linea.puestos}\n    prendas totales: #{linea.prendas}\n    productividad: #{Util.formater(linea.productividad)} prendas/puesto\n"
     end)
     # fusiono toda la lista en un solo string, separo cada elemento de la anterior lista con un salto de linea "\n"
     |> Enum.join("\n")
@@ -148,7 +148,7 @@ Parametros:
       end)
       |> Enum.join("\n")
 
-    "\n\n----------R3----------\n#{lineas}#{info2}"
+    "\n\n----------R3----------\n#{lineas}\n\n#{info2}"
 
   end
 
@@ -211,215 +211,226 @@ Parametros:
     "\n\n----------R4----------\n#{lineas}"
   end
 
-  @doc """
-  R5. Funcion que genera el reporte del confeccionista que produjo mas prendas cada dia.
 
-  Retorna: Un string con el titulo, una linea por dia (si hay empate se muestran todos
-  los empatados, y si no hubo lotes validos se indica) y al final quien ocupo el primer
-  lugar mas dias y cuantos (con empates incluidos).
+  # R5 (calculo). Retorna una lista de 6 mapas (uno por dia) con la forma %{dia, prendas, lideres}
+  # "lideres" es una lista con TODOS los confeccionistas que igualan el maximo de prendas ese dia.
+  # Si "lideres" es una lista vacia significa que ese dia no hubo lotes validos
+  def lideres_por_dia(liquidaciones) do #entra una lista de mapas donde cada elemento es una liquidacion
+    # lista de mapas, un mapa por cada dia que trabajo cada confeccionista: %{codigo, nombre, dia, prendas}
+    entradas =
+      liquidaciones
+      |> Enum.flat_map(fn liquidacion -> #flatmap me permite reestructurar la lista de mapas que es liquidaciones en una lista plana como de un nivel nomas, en vez de una lista de listas
+        Enum.map(liquidacion.detalle, fn detalle_dia -> #lo que hace este map es agarrar el mapa de detalle y retornar una lista de mapas con la informacion requerida para luego agrupar cada confeccionista con su dia y su produccion
+          %{
+            codigo: liquidacion.codigo,
+            nombre: liquidacion.nombre,
+            dia: detalle_dia.dia,
+            prendas: detalle_dia.prendas
+          }
+        end)
+      end)
 
-  Parametros:
-  - 'lotes_validos' : Lista de mapas con los lotes que pasaron la validacion.
-  - 'confeccionistas' : Mapa con clave "codigo" y valor el mapa del confeccionista.
-  """
-  def lideres_por_dia_r5(lotes_validos, confeccionistas) do
-    # lista de tuplas {dia, [codigos lideres], prendas} para los 6 dias
-    lideres = lideres_por_dia(lotes_validos)
+    # mapa con clave "dia" y valor "lista de lo que produjo cada confeccionista ese dia"
+    grupos = Enum.group_by(entradas, fn entrada -> entrada.dia end) #agrupo la lista de mapas que me retorno el flatmap en un mapa
 
-    # convierto cada tupla en una linea de texto
-    info1 =
-      lideres
-      |> Enum.map(fn lider -> linea_lider_dia(lider, confeccionistas) end)
+    1..6 #simplemente una lista con elementos del 1 al 6 que me van a servir para ver quien fue el que mas produjo en un dia especifico
+    |> Enum.map(fn dia -> #map que me retorna una lista de mapas
+      # Map.get/3 con [] para que un dia sin lotes no de nil
+      candidatos = Map.get(grupos, dia, []) #map get me retorna un mapa de los que mas trabajaron en un dia concreto, si nadie trabajo en algun dia no me retorna "nil" para es edia sino que me retorna "[]'
+
+      case candidatos do
+        # si nadie trabajo ese dia, no hay lider
+        [] ->
+          %{dia: dia, prendas: 0, lideres: []}
+
+        _ ->
+          maximo = candidatos |> Enum.map(fn c -> c.prendas end) |> Enum.max() # miro cual es la maxima produccion de prendas un dia concreto
+          # me quedo con todos los que igualan el maximo, asi se manejan los empates
+          lideres = Enum.filter(candidatos, fn c -> c.prendas == maximo end) #aqui busco los que obtuvieron dicha produccion maxima el mismo dia concreto
+          %{dia: dia, prendas: maximo, lideres: lideres}
+      end
+    end)
+  end
+
+  # R5 (texto). Recibe la lista que entrega lideres_por_dia/1
+  def reporte_r5(lideres_dias) do
+    lineas =
+      lideres_dias
+      |> Enum.map(fn dia ->
+        case dia.lideres do
+          [] -> "Dia #{dia.dia}:\n    sin lotes validos\n"
+          lideres -> "Dia #{dia.dia}:\n    lider: #{nombres_con_codigo(lideres)}\n    prendas: #{dia.prendas}\n"
+        end
+      end)
       |> Enum.join("\n")
 
-    # mensaje final con el confeccionista que mas dias fue primero
-    info2 = resumen_lider_semana(lideres, confeccionistas)
-
-    "=== R5. Confeccionista lider por dia ===\n" <> info1 <> "\n" <> info2
+    "\n\n----------R5----------\n#{lineas}\n#{primer_lugar_mas_dias(lideres_dias)}"
   end
 
-  defp lideres_por_dia(lotes_validos) do
-    # mapa con clave "dia" y valor "lista de lotes de ese dia"
-    por_dia = Enum.group_by(lotes_validos, fn lote -> lote.dia end)
-
-    # recorro los 6 dias, Map.get/3 evita nil en los dias sin lotes
-    Enum.map(1..6, fn dia -> lider_del_dia(dia, Map.get(por_dia, dia, [])) end)
-  end
-
-  defp lider_del_dia(dia, lotes_dia) do
-    # lista de tuplas {codigo, prendas del dia}, sumando todas las lineas del confeccionista
-    totales =
-      lotes_dia
-      |> Enum.group_by(fn lote -> lote.confeccionista end, fn lote -> lote.prendas end)
-      |> Enum.map(fn {codigo, prendas} -> {codigo, Enum.sum(prendas)} end)
-
-    case totales do
-      # dia sin lotes validos
-      [] ->
-        {dia, [], 0}
-
-      _ ->
-        # mayor cantidad de prendas del dia
-        maximo = totales |> Enum.map(fn {_codigo, prendas} -> prendas end) |> Enum.max()
-
-        # todos los que igualan el maximo (empates), ordenados por codigo
-        codigos =
-          totales
-          |> Enum.filter(fn {_codigo, prendas} -> prendas == maximo end)
-          |> Enum.map(fn {codigo, _prendas} -> codigo end)
-          |> Enum.sort()
-
-        {dia, codigos, maximo}
-    end
-  end
-
-  defp linea_lider_dia({dia, [], _prendas}, _confeccionistas),
-    do: "El dia #{dia} no tuvo lotes validos"
-
-  defp linea_lider_dia({dia, codigos, prendas}, confeccionistas),
-    do: "El dia #{dia} lidero #{nombres(codigos, confeccionistas)} con #{prendas} prendas"
-
-  defp resumen_lider_semana(lideres, confeccionistas) do
-    # junto los codigos de todos los dias (con empates) y cuento cuantas veces aparece cada uno
-    victorias =
-      lideres
-      |> Enum.flat_map(fn {_dia, codigos, _prendas} -> codigos end)
-      |> Enum.frequencies()
-
-    case Map.values(victorias) do
-      # ningun dia tuvo lotes validos
-      [] ->
-        "Ningun dia tuvo lotes validos, no hay primer lugar semanal"
-
-      conteos ->
-        mayor = Enum.max(conteos)
-
-        # si hay empate en cantidad de dias se incluyen todos
-        codigos =
-          victorias
-          |> Enum.filter(fn {_codigo, dias} -> dias == mayor end)
-          |> Enum.map(fn {codigo, _dias} -> codigo end)
-          |> Enum.sort()
-
-        "Ocupo el primer lugar mas dias: #{nombres(codigos, confeccionistas)} con #{mayor} dia(s)"
-    end
-  end
-
-
-  defp nombres(codigos, confeccionistas) do
-    codigos
-    |> Enum.map(fn codigo -> "#{Map.get(confeccionistas, codigo).nombre} (#{codigo})" end)
+  # recibe una lista de mapas con :nombre y :codigo y los junta en un solo texto separado por comas
+  defp nombres_con_codigo(personas) do
+    personas
+    |> Enum.map(fn persona -> "#{persona.nombre} (#{persona.codigo})" end)
     |> Enum.join(", ")
   end
 
-  @doc """
-  R6. Funcion que genera el reporte del confeccionista con el menor porcentaje de defectos ponderado por prendas entre quienes tengan al menos 3 lotes validos.
+  # indica quien ocupo el primer lugar mas dias y cuantos, si hay empate incluye a todos los empatados
+  # (en un dia con empate, cada empatado suma un primer lugar)
+  defp primer_lugar_mas_dias(lideres_dias) do
+    # una sola lista con todos los lideres de todos los dias
+    todos_los_lideres = Enum.flat_map(lideres_dias, fn dia -> dia.lideres end)
+    # mapa con clave "codigo" y valor "cuantos dias fue lider"
+    conteo = Enum.frequencies_by(todos_los_lideres, fn lider -> lider.codigo end)
+    # mapa para recuperar el nombre a partir del codigo
+    nombres = Map.new(todos_los_lideres, fn lider -> {lider.codigo, lider.nombre} end)
 
-  Retorna: Un string con el titulo y el ganador (todos los empatados si los hay),
-  o un aviso si nadie cumple el minimo de 3 lotes validos.
-
-  Parametros:
-  - 'lotes_validos' : Lista de mapas con los lotes validados.
-  - 'confeccionistas' : Mapa con clave "codigo" y valor el mapa del confeccionista.
-  """
-  def mejor_calidad_r6(lotes_validos, confeccionistas) do
-    # lista de tuplas {codigo, porcentaje ponderado} solo de quienes tienen 3 o mas lotes validos
-    candidatos =
-      lotes_validos
-      |> Enum.group_by(fn lote -> lote.confeccionista end)
-      |> Enum.filter(fn {_codigo, lotes} -> length(lotes) >= 3 end)
-      |> Enum.map(fn {codigo, lotes} -> {codigo, porcentaje_ponderado(lotes)} end)
-
-    titulo = "=== R6. Confeccionista con mejor calidad ===\n"
-
-    case candidatos do
-      # nadie llego al minimo de lotes
+    case Map.values(conteo) do
+      # si no hay ningun lider es porque ningun dia tuvo lotes validos
       [] ->
-        titulo <> "Ningun confeccionista tiene al menos 3 lotes validos"
+        "Ningun dia tuvo lotes validos, no hay primer lugar semanal"
 
-      _ ->
-        # el menor porcentaje es el de mejor calidad
-        menor = candidatos |> Enum.map(fn {_codigo, porcentaje} -> porcentaje end) |> Enum.min()
+      veces_por_persona ->
+        maximo = Enum.max(veces_por_persona)
 
-        mensajes =
-          candidatos
-          |> Enum.filter(fn {_codigo, porcentaje} -> porcentaje == menor end)
-          |> Enum.sort_by(fn {codigo, _porcentaje} -> codigo end)
-          |> Enum.map(fn {codigo, porcentaje} ->
-            "#{nombres([codigo], confeccionistas)} con #{Util.formater(porcentaje)}% de defectos ponderado"
-          end)
-          |> Enum.join("\n")
+        ganadores =
+          conteo
+          |> Enum.filter(fn {_codigo, veces} -> veces == maximo end)
+          |> Enum.sort()
+          |> Enum.map(fn {codigo, _veces} -> %{codigo: codigo, nombre: Map.get(nombres, codigo)} end)
+          |> nombres_con_codigo()
 
-        titulo <> mensajes
+        "Primer lugar en mas dias (#{maximo} dia(s)): #{ganadores}"
     end
   end
 
 
-  defp porcentaje_ponderado(lotes) do
-    suma_ponderada = lotes |> Enum.map(fn lote -> lote.defectos * lote.prendas end) |> Enum.sum()
-    total_prendas = lotes |> Enum.map(fn lote -> lote.prendas end) |> Enum.sum()
+  # R6 (calculo). Retorna {:ok, mejores, elegibles} o {:error, :sin_elegibles}
+  # elegibles son los que tienen al menos 3 lotes validos, ordenados del mejor al peor porcentaje ponderado
+  # mejores son todos los que igualan el menor porcentaje ponderado (por si hay empate)
+  def mejor_calidad(lotes_validos, confeccionistas) do
+    elegibles =
+      lotes_validos
+      # mapa con clave "codigo del confeccionista" y valor "lista de sus lotes validos"
+      |> Enum.group_by(fn lote -> lote.confeccionista end)
+      # solo participan los que tienen al menos 3 lotes validos
+      |> Enum.filter(fn {_codigo, lotes} -> length(lotes) >= 3 end)
+      |> Enum.map(fn {codigo, lotes} ->
+        %{
+          codigo: codigo,
+          nombre: Map.get(confeccionistas, codigo).nombre,
+          lotes: length(lotes),
+          ponderado: porcentaje_ponderado(lotes),
+          simple: porcentaje_simple(lotes)
+        }
+      end)
+      |> Enum.sort_by(fn e -> {e.ponderado, e.codigo} end)
 
-    suma_ponderada / total_prendas
+    # el case evita usar Enum.min_by sobre una lista vacia, que lanzaria un error
+    case elegibles do
+      [] ->
+        {:error, :sin_elegibles}
+
+      [primero | _resto] ->
+        mejores = Enum.filter(elegibles, fn e -> e.ponderado == primero.ponderado end)
+        {:ok, mejores, elegibles}
+    end
   end
 
-  @doc """
-  R7. Funcion que genera el reporte del total pagado por el taller en la semana
-  y el costo promedio pagado por prenda valida (total pagado / total de prendas validas).
+  # R6 (texto). Dos cabezas de funcion segun lo que retorne mejor_calidad/2
+  def reporte_r6({:error, :sin_elegibles}) do
+    "\n\n----------R6----------\nNingun confeccionista tiene al menos 3 lotes validos"
+  end
 
-  Retorna: Un string con el titulo, el total pagado y el promedio. Si no hay prendas
-  validas indica que el promedio no puede calcularse.
+  def reporte_r6({:ok, mejores, elegibles}) do
+    ganadores =
+      mejores
+      |> Enum.map(fn m ->
+        "#{m.nombre} (#{m.codigo}) con #{Util.formater(m.ponderado)} % de defectos ponderado"
+      end)
+      |> Enum.join("\n")
 
-  Parametros:
-  - 'liquidaciones' : Lista de mapas que retorna Liquidacion.liquidar_todos.
-  """
-  def costo_promedio_r7(liquidaciones) do
-    # el taller paga el neto de cada confeccionista
-    total_pagado = liquidaciones |> Enum.map(fn liq -> liq.neto end) |> Enum.sum()
-    total_prendas = liquidaciones |> Enum.map(fn liq -> liq.prendas end) |> Enum.sum()
+    # muestra a todos los elegibles con ambas medidas para poder ver la diferencia entre ponderado y promedio simple
+    comparacion =
+      elegibles
+      |> Enum.map(fn e ->
+        "#{e.nombre} (#{e.codigo})\n    lotes: #{e.lotes}\n    defectos ponderado: #{Util.formater(e.ponderado)} %\n    defectos promedio simple: #{Util.formater(e.simple)} %\n"
+      end)
+      |> Enum.join("\n")
 
-    # si no hay prendas validas la division seria por cero, por eso se usa if
+    "\n\n----------R6----------\nMejor calidad:\n#{ganadores}\n\nComparacion entre ponderado y promedio simple:\n#{comparacion}"
+  end
+
+  # porcentaje_ponderado = suma(defectos * prendas) / suma(prendas)
+  defp porcentaje_ponderado(lotes) do
+    defectos_por_prendas =
+      lotes |> Enum.map(fn lote -> lote.defectos * lote.prendas end) |> Enum.sum()
+
+    prendas = lotes |> Enum.map(fn lote -> lote.prendas end) |> Enum.sum()
+
+    defectos_por_prendas / prendas
+  end
+
+  # promedio simple de los porcentajes de defectos de cada lote
+  defp porcentaje_simple(lotes) do
+    suma_defectos = lotes |> Enum.map(fn lote -> lote.defectos end) |> Enum.sum()
+    suma_defectos / length(lotes)
+  end
+
+
+
+  # R7 (calculo). Retorna un mapa con el total pagado, el total de prendas y el promedio
+  # el promedio es :no_calculable cuando no hay prendas validas (evita dividir por cero)
+  def totales(liquidaciones) do
+    total_pagado = liquidaciones |> Enum.map(fn l -> l.neto end) |> Enum.sum()
+    total_prendas = liquidaciones |> Enum.map(fn l -> l.prendas end) |> Enum.sum()
+
     promedio =
       if total_prendas == 0 do
-        "El promedio por prenda no puede calcularse porque no hay prendas validas"
+        :no_calculable
       else
-        "Costo promedio por prenda valida: $#{Util.formater(total_pagado / total_prendas)}"
+        total_pagado / total_prendas
       end
 
-    "=== R7. Total pagado y costo promedio por prenda ===\n" <>
-      "Total pagado por el taller: $#{Util.formater(total_pagado)}\n" <> promedio
+    %{total_pagado: total_pagado, total_prendas: total_prendas, promedio: promedio}
   end
 
-  @doc """
-  R8. Funcion que genera el reporte de los confeccionistas que elaboraron al menos
-  un lote valido en todas las lineas de produccion.
+  # R7 (texto)
+  def reporte_r7(totales) do
+    promedio =
+      case totales.promedio do
+        :no_calculable -> "no puede calcularse porque no hay prendas validas"
+        valor -> "$#{Util.formater(valor)}"
+      end
 
-  Retorna: Un string con el titulo y la lista de confeccionistas o un aviso si no hay ninguno.
+    "\n\n----------R7----------\nTotal que debe pagar el taller: $#{Util.formater(totales.total_pagado)}\nTotal de prendas validas: #{totales.total_prendas}\nCosto promedio por prenda valida: #{promedio}"
+  end
 
-  Parametros:
-  - 'lotes_validos' : Lista de mapas con los lotes validados.
-  - 'lineas' : Mapa con clave "id" y valor el mapa de la linea.
-  - 'confeccionistas' : Mapa con clave "codigo" y valor el mapa del confeccionista.
-  """
-  def en_todas_las_lineas_r8(lotes_validos, lineas, confeccionistas) do
-    # lista con los ids de todas las lineas registradas
-    ids_lineas = Map.keys(lineas)
 
-    codigos =
-      lotes_validos
-      # mapa con clave "codigo" y valor "lista de lineas donde trabajo" (group_by/3 transforma el valor)
-      |> Enum.group_by(fn lote -> lote.confeccionista end, fn lote -> lote.linea end)
-      # me quedo con quienes tienen TODAS las lineas dentro de las que trabajaron
-      |> Enum.filter(fn {_codigo, lineas_trabajadas} ->
-        Enum.all?(ids_lineas, fn id -> Enum.member?(lineas_trabajadas, id) end)
-      end)
-      |> Enum.map(fn {codigo, _lineas_trabajadas} -> codigo end)
-      |> Enum.sort()
+  # R8 (calculo). Retorna una lista de mapas %{codigo, nombre}, vacia si ninguno cumple
+  def en_todas_las_lineas(lotes_validos, lineas, confeccionistas) do
+    # cantidad de lineas que existen, sin dejarla escrita a mano
+    total_lineas = map_size(lineas)
 
-    titulo = "=== R8. Confeccionistas que trabajaron en todas las lineas ===\n"
+    lotes_validos
+    |> Enum.group_by(fn lote -> lote.confeccionista end)
+    # me quedo con los que tienen tantas lineas distintas como lineas existen
+    |> Enum.filter(fn {_codigo, lotes} ->
+      lotes |> Enum.map(fn lote -> lote.linea end) |> Enum.uniq() |> length() == total_lineas
+    end)
+    |> Enum.map(fn {codigo, _lotes} ->
+      %{codigo: codigo, nombre: Map.get(confeccionistas, codigo).nombre}
+    end)
+    |> Enum.sort_by(fn c -> c.codigo end)
+  end
 
-    case codigos do
-      [] -> titulo <> "Ningun confeccionista trabajo en todas las lineas"
-      _ -> titulo <> nombres(codigos, confeccionistas)
-    end
+  # R8 (texto)
+  def reporte_r8(confeccionistas) do
+    contenido =
+      case confeccionistas do
+        [] -> "Ningun confeccionista trabajo en todas las lineas"
+        lista -> lista |> Enum.map(fn c -> "#{c.nombre} (#{c.codigo})" end) |> Enum.join("\n")
+      end
+
+    "\n\n----------R8----------\n#{contenido}"
   end
 end
