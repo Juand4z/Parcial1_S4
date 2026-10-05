@@ -15,8 +15,17 @@ defmodule Programa do
 
     liquidaciones = Liquidacion.liquidar_todos(confeccionistas, lotes_validos)
 
-    #faltarian los rankings y la combinacion pero eso lo hacemos cuando lleguemos al punto c
-    comprobante= solicitar_comprobante() |> Util.mostrar_mensaje()
+    Reportes.rechazados_r1(lotes_invalidos) |> Util.mostrar_mensaje()
+    Reportes.prendas_por_linea_r2(lotes_validos, lineas) |> Util.mostrar_mensaje()
+    Reportes.reporte_r3(produccion_por_dia) |> Util.mostrar_mensaje()
+
+    liquidaciones
+    |> Reportes.liquidacion_ordenada()
+    |> Reportes.reporte_r4()
+    |> Util.mostrar_mensaje()
+
+    # r5 a r8 y el comprobante se agregan despues
+    #faltarian los rankins y la combinacion pero eso lo hacemos cuando lleguemos al punto c
   end
 
   defp solicitar_lote_add(confeccionistas, lineas) do
@@ -30,10 +39,17 @@ defmodule Programa do
         Util.mostrar_mensaje("se agrego el lote correctamente")
         [lote]
 
-       {:rechazado, lote, motivo} -> Util.mostrar_mensaje("el lote se ingreso correctamente pero fue rechazado por el siguiente motivo: #{motivo}")
-            lote
-       _ -> Util.mostrar_mensaje("se ingreso un formato invalido")
+      :omitido ->
+        Util.mostrar_mensaje("omitido")
+        []
 
+      {:rechazado, lote, motivo} ->
+        Util.mostrar_mensaje("el lote se ingreso correctamente pero fue rechazado por el siguiente motivo: #{motivo}")
+        [lote] # se agrega igual para que aparezca en R1, los calculos lo excluyen
+
+      _ ->
+        Util.mostrar_mensaje("se ingreso un formato invalido")
+        []
     end
   end
 
