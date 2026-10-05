@@ -140,7 +140,12 @@ defmodule Util do
    -valor, para convertirlo a dos decimales
   """
   def formater(valor) do
-    :io_lib.format("~.2f", [valor]) |> List.to_string()
+  # Si es entero, lo divide por 1 para volverlo float (ej. 529560 -> 529560.0)
+  # Si ya es float, lo deja igual.
+  float_valor = if is_integer(valor), do: valor / 1, else: valor
+
+  :io_lib.format("~.2f", [float_valor])
+  |> List.to_string()
   end
 
   def texto_a_entero(texto) do

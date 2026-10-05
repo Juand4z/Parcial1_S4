@@ -144,7 +144,7 @@ defmodule Validacion do
 # ### Parametros:
 # - 'texto': Cadena de texto separando cada elemento con ';'
 #
-  defp parsear_lote_adicional(texto) when is_binary(texto) do
+  defp parsear_lote_adicional(texto) when is_binary(texto) do 
     campos = texto
     |> String.trim()
     |> String.split(";") #me retorna una lista con los elementos que estaban separados por ";"
