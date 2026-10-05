@@ -1,4 +1,13 @@
 defmodule Programa do
+    @moduledoc """
+  Modulo principal del programa.
+  Coordina el flujo completo: carga los datos, solicita un lote adicional por consola,
+  valida los lotes, calcula las liquidaciones y muestra los reportes R1 a R8.
+  - Autores: Luis Miguel Garcia Villanueva, Juan David Arias Sanchez.
+  - Fecha: Octubre 5 2026
+  - Licencia: GNU GPL v3
+  """
+
   def main do
     confeccionistas = Util.convertir_a_mapa_por(Datos.confeccionistas(), :codigo) #convierto los datos de una lista de mapas a un solo mapa con clave "el codigo del confeccionista"
     lineas = Util.convertir_a_mapa_por(Datos.lineas(), :id)

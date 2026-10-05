@@ -1,4 +1,13 @@
 defmodule Validacion do
+  @moduledoc """
+  Módulo de validacion de lotes.
+  Verifica las reglas de negocio (confeccionista, linea, dia, prendas y porcentaje de defectos),
+  clasifica los lotes en validos e invalidos, y procesa el lote adicional ingresado por consola.
+  - Autores: Luis Miguel Garcia Villanueva, Juan David Arias Sanchez.
+  - Fecha: Octubre 5 2026
+  - Licencia: GNU GPL v3
+  """
+
   @doc """
   Valida las reglas de negocio de un lote de manera secuencial con la estructura "with".
   Evalua cada condicion en order y se detiene cuando se encuentra con un error:
@@ -144,7 +153,7 @@ defmodule Validacion do
 # ### Parametros:
 # - 'texto': Cadena de texto separando cada elemento con ';'
 #
-  defp parsear_lote_adicional(texto) when is_binary(texto) do 
+  defp parsear_lote_adicional(texto) when is_binary(texto) do
     campos = texto
     |> String.trim()
     |> String.split(";") #me retorna una lista con los elementos que estaban separados por ";"

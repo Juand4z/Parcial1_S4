@@ -1,4 +1,14 @@
 defmodule Reportes do
+  @moduledoc """
+  Modulo que genera los reportes del taller (R1 a R8).
+  Incluye lotes rechazados, prendas por linea, produccion diaria y meta,
+  liquidacion ordenada, lider por dia, mejor calidad, total pagado y costo promedio,
+  y confeccionistas que trabajaron en todas las lineas.
+  - Autores: Luis Miguel Garcia Villanueva, Juan David Arias Sanchez.
+  - Fecha: Octubre 5 2026
+  - Licencia: GNU GPL v3
+  """
+
 @doc """
 R1. Funcion que genera el reporte de los lotes rechazados junto a su motivo y la cantidad de rechazados por motivo.
 

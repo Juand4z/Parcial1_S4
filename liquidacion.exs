@@ -1,4 +1,13 @@
 defmodule Liquidacion do
+    @moduledoc """
+  Modulo encargado de la liquidacion de los confeccionistas del taller.
+  Calcula el valor de cada lote segun su porcentaje de defectos, las bonificaciones
+  diarias, el descuento por alquiler de máquinas y el pago neto de cada confeccionista.
+  - Autores: Luis Miguel Garcia Villanueva, Juan David Arias Sanchez.
+  - Fecha: Octubre 5 2026
+  - Licencia: GNU GPL v3
+  """
+
   @doc """
   Funcion calcula el valor de un lote con respecto a sus prendas y porcentaje de defectos.
   Retorna un flotante o real que representa el valor total del lote calculado
