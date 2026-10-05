@@ -87,17 +87,18 @@ defmodule Util do
     |> String.trim()
   end
 
- def ingresar(mensaje, :booleano) do
-     valor = mensaje
-    |> IO.gets()
-    |> String.trim()
-    |> String.downcase()
+  def ingresar(mensaje, :booleano) do
+    valor =
+      mensaje
+      |> IO.gets()
+      |> String.trim()
+      |> String.downcase()
+
     if valor == "si" do
       true
     else
       false
     end
-
   end
 
   def ingresar(mensaje, :entero) do
@@ -142,31 +143,34 @@ defmodule Util do
     :io_lib.format("~.2f", [valor]) |> List.to_string()
   end
 
+  def texto_a_entero(texto) do
+    case Integer.parse(String.trim(texto)) do
+      {n, ""} -> {:ok, n}
+      _ -> :error
+    end
+  end
 
   @doc """
   Funcion generada con IA para pasar de una cadena de texto a un valor numerico que puede ser entero o float
   ## Parametros
    -valor, para convertirlo a dos decimales
   """
-  def texto_a_numero(cadena) do
-    cadena
-    |> String.trim()
-    |> Float.parse()
-    |> case do
-      {numero, _resto} -> numero
-      :error -> cadena                  #esto es en caso de que depronto me ingresen un entero individual
-                |> String.trim()
-                |> Integer.parse()
-                |> case do
-                  {numero, _resto} -> numero
-                  :error -> {:error, "se espera que ingrese un valor valido"}
-                end
+  def texto_a_numero(texto) do
+    texto = String.trim(texto)
+
+    case Integer.parse(texto) do
+      {n, ""} ->
+        {:ok, n}
+
+      _ ->
+        case Float.parse(texto) do
+          {f, ""} -> {:ok, f}
+          _ -> :error
+        end
     end
   end
 
   def convertir_a_mapa_por(elementos, clave) do
     Map.new(elementos, fn elemento -> {Map.get(elemento, clave), elemento} end)
   end
-
-
 end

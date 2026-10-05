@@ -4,20 +4,18 @@ defmodule Reportes do
     # me retornara un mapa con clave "motivo del rechazo" y valor "la cantidad de rechazos por ese motivo"
     frecuencias_motivos = Enum.frequencies_by(lotes_rechazados, fn {_lote, motivo} -> motivo end)
 
-    # retorno la lista de mapas, de los lotes rechazados junto con un mapa que agrupa cada motivo de rechazo como clave y el valor de su frecuencia como valor
-    {lotes_rechazados, frecuencias_motivos}
-
     info1 =
       Enum.map(lotes_rechazados, fn {lote, motivo} ->
         "El lote del confeccionista #{lote.confeccionista} fue rechazado por #{motivo}"
       end)
 
+    # Enum.map sobre un mapa entrega tuplas {clave, valor}, por eso el patron es {motivo, cantidad}
     info2 =
-      Enum.map(frecuencias_motivos, fn %{calve, valor} ->
-        "El motivo de rechazo #{clave}, ocurrio #{valor} veces"
+      Enum.map(frecuencias_motivos, fn {motivo, cantidad} ->
+        "El motivo de rechazo #{motivo}, ocurrio #{cantidad} veces"
       end)
 
-    resultado = Enum.join(info1, "\n") <> "\n" <> Enum.join(info2, "\n")
+    Enum.join(info1, "\n") <> "\n" <> Enum.join(info2, "\n")
   end
 
   @doc """
@@ -66,7 +64,7 @@ defmodule Reportes do
   defp productividad(_prendas, _puestos), do: 0.0
 
   @doc """
-  R3 Devuelve el mapa `%{dia => prendas}` con los 6 días de producción
+  R3 (calculo). Devuelve el mapa `%{dia => prendas}` con los 6 días de producción
   (los días sin lotes válidos valen 0). Es la base de R3 y de
   `combinar_talleres/2`.
   """
@@ -75,17 +73,24 @@ defmodule Reportes do
     base = Map.new(1..6, fn dia -> {dia, 0} end)
 
     # itero sobre los lotes validos asignando el valor de las prendas al acumulador, es decir, sumo las prendas de cada dia
+    Enum.reduce(lotes_validos, base, fn lote, acc ->
+      # va acumulando los valores de las prendas al mapa con clave "dia" y valor "prendas sumandosen"
+      Map.update(acc, lote.dia, lote.prendas, fn actual -> actual + lote.prendas end)
+    end)
+  end
+
+  @doc """
+  R3 (texto). Recibe el mapa `%{dia => prendas}` que entrega `produccion_por_dia/1`
+  y devuelve el texto del reporte, indicando si se alcanzó la meta cada día.
+  """
+  def reporte_r3(produccion) do
+    # organizo todo en una lista de mapas (ordenada por dia), donde cada mapa contiene la informacion necesaria para el mensaje
     info1 =
-      Enum.reduce(lotes_validos, base, fn lote, acc ->
-        # va acumulando los valores de las prendas al mapa con clave "dia" y valor "prendas sumandosen"
-        Map.update(acc, lote.dia, lote.prendas, fn actual -> actual + lote.prendas end)
-      end)
-      # organizo todo en una lista de mapas, donde cada mapa contiene la informacion necesaria para realizar el mensaje finalmente
-      |> Enum.map(fn {calve, valor} ->
+      produccion
+      |> Enum.sort()
+      |> Enum.map(fn {clave, valor} ->
         %{dia: clave, prendas: valor, meta: meta_alcanzada?(valor)}
       end)
-
-    # junto todo en un string y separo los elementos por un salto de linea
 
     info2 =
       case al_menos_un_dia(info1) do
@@ -94,17 +99,22 @@ defmodule Reportes do
         :ninguno -> "\nNo se alcanzo la meta ningun dia"
       end
 
-    info1
-    |> Enum.map(fn x ->
-      if x.meta do
-        # si la meta es true, si se alcanzo y asigna un elemento a lista que se esta generando con este mensaje
-        "el dia #{x.dia} se obtuvieron #{x.prendas} y si se alcanzo la meta"
-      else
-        # caso contraio pasa esto
-        "el dia #{x.dia} se obtuvieron #{x.prendas} y no se alcanzo la meta"
-      end
-    end)
-    |> Enum.join("\n") <> info2
+    # junto todo en un string y separo los elementos por un salto de linea.
+    # El pipe se cierra con parentesis porque "<>" tiene mayor precedencia que "|>"
+    lineas =
+      info1
+      |> Enum.map(fn x ->
+        if x.meta do
+          # si la meta es true, si se alcanzo y asigna un elemento a lista que se esta generando con este mensaje
+          "el dia #{x.dia} se obtuvieron #{x.prendas} y si se alcanzo la meta"
+        else
+          # caso contraio pasa esto
+          "el dia #{x.dia} se obtuvieron #{x.prendas} y no se alcanzo la meta"
+        end
+      end)
+      |> Enum.join("\n")
+
+    lineas <> info2
   end
 
   @doc """
@@ -134,8 +144,19 @@ defmodule Reportes do
   def liquidacion_ordenada(liquidaciones) do
     liquidaciones
     |> Enum.sort_by(fn liquidacion -> liquidacion.neto end, :desc)
-    |> Enun.map(fn x-> "Confeccionista #{x.nombre} con codigo #{x.codigo}, prendas #{x.prendas}, pago bruto #{x.bruto}, bonificaciones #{x.bonificaciones}, costo alquiler #{x.alquiler}, pago neto #{x.neto}"end)
-    |> Enum.join("\n")
+    # numera cada liquidacion empezando en 1, queda una lista de tuplas {liquidacion, posicion}
+    |> Enum.with_index(1)
   end
 
+  @doc """
+  R4 (texto). Recibe la lista de tuplas `{liquidacion, posicion}` que entrega
+  `liquidacion_ordenada/1` y devuelve el texto del reporte.
+  """
+  def reporte_r4(liquidaciones_ordenadas) do
+    liquidaciones_ordenadas
+    |> Enum.map(fn {x, posicion} ->
+      "#{posicion}. Confeccionista #{x.nombre} con codigo #{x.codigo}, prendas #{x.prendas}, pago bruto #{x.bruto}, bonificaciones #{x.bonificaciones}, costo alquiler #{x.alquiler}, pago neto #{x.neto}"
+    end)
+    |> Enum.join("\n")
+  end
 end

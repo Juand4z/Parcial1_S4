@@ -1,12 +1,12 @@
 defmodule Liquidacion do
   def valor_lote(%{prendas: prendas, defectos: defectos}) do
-    prendas * 3200 * ajuste_defecto(defectos)
+    prendas * 32 * ajuste_defecto(defectos)
   end
 
-  defp ajuste_defecto(defectos) when defectos <= 2, do: 1.07
-  defp ajuste_defecto(defectos) when defectos > 2 and defectos <= 5, do: 1
-  defp ajuste_defecto(defectos) when defectos > 5 and defectos <= 10, do: 0.88
-  defp ajuste_defecto(_defectos), do: 0.75
+  defp ajuste_defecto(defectos) when defectos <= 2, do: 107
+  defp ajuste_defecto(defectos) when defectos > 2 and defectos <= 5, do: 100
+  defp ajuste_defecto(defectos) when defectos > 5 and defectos <= 10, do: 88
+  defp ajuste_defecto(_defectos), do: 75
 
   def bonificacion_del_dia(prendas_dia) do
     if prendas_dia >= 120 do
@@ -17,7 +17,7 @@ defmodule Liquidacion do
   end
 
   def alquiler_maquina_descontable(%{alquiler: true}, dias) do
-    dias * 18000
+    dias * 15000
   end
 
   def alquiler_maquina_descontable(_confeccionista, _dias), do: 0

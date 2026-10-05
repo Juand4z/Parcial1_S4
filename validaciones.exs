@@ -151,9 +151,9 @@ defmodule Validacion do
     |> Enum.map(fn x -> String.trim(x) end) #elimina los espacios al principio y al final de cada elemento de la lista
 
     with [confeccionista, linea, dia_texto, prendas_texto, defectos_texto] <- campos, #usa patern matching para asignarle un valor a cada variable de la izquierda
-         {:ok, dia} <- Util.texto_a_numero(dia_texto), #uso la funcion del modulo Util para pasar los valores strings a valores numericos
-         {:ok, prendas} <- Util.texto_a_numero(prendas_texto), #esta funcion esta refinada para ser capaz de retornar tanto un entero como un float
-         {:ok, defectos} <- Util.texto_a_numero(defectos_texto) do #la funcion tambien esta preparada para controlarse en caso de un error, retornando ":error, se espera un valor valido" en forma de tupla
+         {:ok, dia} <- Util.texto_a_entero(dia_texto), #texto_a_entero retorna {:ok, entero} o :error, el dia debe ser un entero
+         {:ok, prendas} <- Util.texto_a_entero(prendas_texto), #las prendas tambien deben ser un entero
+         {:ok, defectos} <- Util.texto_a_numero(defectos_texto) do #texto_a_numero acepta entero o decimal con punto; si algo falla retorna :error y el else devuelve {:error, :formato_invalido}
       {:ok, # si todo pasa correctamente me retorna un tupla con {:ok, el nuevo lote}
        %{
          confeccionista: confeccionista,
