@@ -8,7 +8,7 @@ defmodule Liquidacion do
   - 'defectos : defectos' : Representa el porcentaje de defectos dentro del lote (Pattern Matching).
   """
   def valor_lote(%{prendas: prendas, defectos: defectos}) do
-    prendas * 3200 * ajuste_defecto(defectos)
+    prendas * 32 * ajuste_defecto(defectos)
   end
 
 # Funcion que calcula una bonificacion segun el porcentaje de defectos, utiliza la estructura guards.
