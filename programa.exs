@@ -21,27 +21,45 @@ defmodule Programa do
 
     liquidaciones
     |> Reportes.liquidacion_ordenada() #para el reporte 4
-    |> Reportes.reporte_r4()
+    |> Reportes.reporte_r4() #el string bonito
     |> Util.mostrar_mensaje() #reporte 4
 
-     Reportes.lideres_por_dia(liquidaciones) |> Reportes.reporte_r5() |> Util.mostrar_mensaje()
+     Reportes.lideres_por_dia(liquidaciones) |> Reportes.reporte_r5() |> Util.mostrar_mensaje() #le ingresamos las liquidaciones a liderespordia y esos lideres se los pasamos al reporte 5 para el string bonito
 
     lotes_validos
-    |> Reportes.mejor_calidad(confeccionistas)
+    |> Reportes.mejor_calidad(confeccionistas) #le pasamos el mapa, previamente indexado a mapa a la funcion mejor_calidad, para luego generar elstring con reporte_r6
     |> Reportes.reporte_r6()
     |> Util.mostrar_mensaje()
 
-    liquidaciones |> Reportes.totales() |> Reportes.reporte_r7() |> Util.mostrar_mensaje()
+    liquidaciones |> Reportes.totales() |> Reportes.reporte_r7() |> Util.mostrar_mensaje() #le damos las liquidaciones a totales para que me genere los gatos del taller con reporte_r7
 
-    Reportes.en_todas_las_lineas(lotes_validos, lineas, confeccionistas)
+    Reportes.en_todas_las_lineas(lotes_validos, lineas, confeccionistas) #le ingresamos los datos necesarios a la funcion en todas las lineas para que me retorne los confeccionistas que tuvieron al menos un lote valido en todas las lineas
     |> Reportes.reporte_r8()
     |> Util.mostrar_mensaje()
 
-    # el comprobante individual se agrega despues
-    #faltarian los rankins y la combinacion pero eso lo hacemos cuando lleguemos al punto c
+     # ---------- Punto C.1: ranking con keyword list ----------
+    # cada elemento de la lista es una keyword list de opciones distinta
+    consultas = [
+      [],
+      [campo: :prendas, limite: 3],
+      [orden: :asc, campo: :bruto],
+      # clave repetida: Keyword.get usa la primera (:prendas), sirve para responder la pregunta 2 de C.1
+      [campo: :prendas, campo: :neto]
+    ]
 
-    # r5 a r8 y el comprobante se agregan despues
-    #faltarian los rankins y la combinacion pero eso lo hacemos cuando lleguemos al punto c
+    Enum.each(consultas, fn opciones ->
+      liquidaciones
+      |> Reportes.ranking(opciones)
+      |> Reportes.reporte_ranking(opciones)
+      |> Util.mostrar_mensaje()
+    end)
+
+    # ---------- Punto C.2: combinar la produccion de dos talleres ----------
+    taller_aliado = %{1 => 550, 2 => 620, 3 => 480, 5 => 710, 7 => 200}
+    Reportes.reporte_c2(produccion_por_dia, taller_aliado) |> Util.mostrar_mensaje()
+
+    # ---------- Comprobante individual (una sola consulta por ejecucion) ----------
+    solicitar_comprobante(liquidaciones)
   end
 
   defp solicitar_lote_add(confeccionistas, lineas) do
@@ -75,7 +93,19 @@ defmodule Programa do
     else
       ""
     end
-  end
-end
 
+    defp solicitar_comprobante(liquidaciones) do
+    codigo = Util.ingresar("\nIngrese el codigo de un confeccionista para ver su comprobante: ", :texto)
+
+      case Reportes.buscar_liquidacion(liquidaciones, codigo) do
+        {:ok, liquidacion} ->
+          liquidacion |> Reportes.comprobante() |> Util.mostrar_mensaje()
+
+        :error ->
+          Util.mostrar_mensaje("El codigo #{codigo} no existe, no hay comprobante para mostrar")
+      end
+    end
+  end
+
+end
 Programa.main()

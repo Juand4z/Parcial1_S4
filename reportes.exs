@@ -387,4 +387,140 @@ defmodule Reportes do
 
     "\n\n----------R8----------\n#{contenido}" #retornamos el string organizado
   end
+
+
+  #comprobante individual
+  # Busca la liquidacion de un confeccionista por su codigo.
+  # Convierte la lista de liquidaciones en un mapa indexado por codigo (como se hace con los confeccionistas)
+  # Map.fetch/2 retorna {:ok, liquidacion} si el codigo existe, o :error si no existe (sin lanzar excepcion)
+  def buscar_liquidacion(liquidaciones, codigo) do
+    liquidaciones
+    |> Util.convertir_a_mapa_por(:codigo) #me retorna un mapa con clave codigo, y valor el mapa de liquidacion completo
+    |> Map.fetch(codigo)
+  end
+
+  # Recibe la liquidacion de UN confeccionista (el mapa que arma Liquidacion.liquidar_confeccionista/2)
+  # y retorna el texto del comprobante. Es pura: no imprime, solo arma el string
+  def comprobante(liquidacion) do #liquidacion entra como un mapa
+    # liquidacion.detalle solo tiene los dias con al menos un lote valido, por eso no hace falta filtrar
+    # se ordena por dia para garantizar que salgan en orden
+    detalle =
+      case Enum.sort_by(liquidacion.detalle, fn d -> d.dia end) do #retorna una lista de mapas, un mapa por cada dia
+        # un confeccionista sin lotes validos tiene el detalle vacio
+        [] ->
+          "    Sin dias trabajados: no tiene lotes validos\n"
+
+        dias ->
+          dias
+          |> Enum.map(fn d -> #mapea la lista de mapas donde d, es un mapa que representa un dia de trabajo del confeccionista y recopila toda la info
+            "    Dia #{d.dia}:\n        prendas: #{d.prendas}\n        valor de los lotes: $#{Util.formater(d.valor_lotes)}\n        bonificacion diaria: $#{Util.formater(d.bonificacion)}\n"
+          end)
+          |> Enum.join("\n")
+      end
+
+    "\n\n----------Comprobante individual----------\nNombre: #{liquidacion.nombre}\nCodigo: #{liquidacion.codigo}\n\nDetalle por dia:\n#{detalle}\nSuma de lotes: $#{Util.formater(liquidacion.bruto)}\nSuma de bonificaciones: $#{Util.formater(liquidacion.bonificaciones)}\nDescuento por alquiler: $#{Util.formater(liquidacion.alquiler)}\nNeto a pagar: $#{Util.formater(liquidacion.neto)}"
+  end
+
+  # C1
+  # Recibe la lista de liquidaciones y una keyword list con estas opciones (todas opcionales):
+  #   campo:  :neto (por defecto), :prendas o :bruto   -> por que valor se ordena
+  #   orden:  :desc (por defecto) o :asc               -> de mayor a menor o de menor a mayor
+  #   limite: entero positivo (por defecto todos)      -> cuantos confeccionistas se devuelven
+  # Retorna {:ok, lista} o {:error, motivo} si alguna opcion tiene un valor invalido
+  def ranking(_liquidaciones, opciones) when not is_list(opciones) do
+    # si no es una lista (por ejemplo un mapa) Keyword.get fallaria, por eso se controla primero
+    {:error, :opciones_invalidas}
+  end
+
+  def ranking(liquidaciones, opciones) do #liquidaciones entra como una lista de mapas, opciones entra como una lista de keyword list con las opciones solicitadas
+    # with encadena las tres validaciones: si alguna retorna {:error, _} se devuelve ese error
+    # y no se ejecuta lo que sigue (la misma idea que Validacion.validar_lote/3)
+    with {:ok, campo} <- opcion_campo(opciones), #intenta asignar el atomo ingresado a la variable campo
+         {:ok, orden} <- opcion_orden(opciones),
+         {:ok, limite} <- opcion_limite(opciones) do
+      ordenadas =
+        # el campo elegido es la clave del mapa de cada liquidacion (:neto, :prendas o :bruto)
+        Enum.sort_by(liquidaciones, fn liquidacion -> Map.get(liquidacion, campo) end, orden) #los ordena teniendo en cuenta el campo y si es asc o desc
+
+      {:ok, aplicar_limite(ordenadas, limite)} #retorna un tupla con :ok y la lista de datos
+    end
+  end
+
+  # Keyword.get/3 busca la clave y, si no existe, retorna el valor por defecto (el tercer argumento)
+  # Si la clave esta repetida retorna la PRIMERA (campo: :prendas, campo: :neto usa :prendas)
+  defp opcion_campo(opciones) do #opciones entre como una lista de keyword list
+    case Keyword.get(opciones, :campo, :neto) do #intenta extraer el valor de asociado al atomo :campo, si no es posible le asigna el valor por defecto ":neto"
+      campo when campo in [:neto, :prendas, :bruto] -> {:ok, campo} #en un case valida que si se ingrese una de las trs opciones posibles para la clave campo
+      otro -> {:error, {:campo_invalido, otro}} #en cualquier otro caso me retorna la tupla con el error, el tipo de error y el atomo que no se encontro
+    end
+  end
+
+  defp opcion_orden(opciones) do
+    case Keyword.get(opciones, :orden, :desc) do
+      orden when orden in [:desc, :asc] -> {:ok, orden}
+      otro -> {:error, {:orden_invalido, otro}}
+    end
+  end
+
+  # sin el valor por defecto Keyword.get retorna nil, y nil significa "sin limite"
+  defp opcion_limite(opciones) do
+    case Keyword.get(opciones, :limite) do
+      nil -> {:ok, nil}
+      limite when is_integer(limite) and limite > 0 -> {:ok, limite}
+      otro -> {:error, {:limite_invalido, otro}}
+    end
+  end
+
+  defp aplicar_limite(lista, nil), do: lista #en caso de que no tenga limite me retorna todos los valores obtenidos
+  defp aplicar_limite(lista, limite), do: Enum.take(lista, limite) #caso contrario, que si tiene limite, toma los primeros "limite" elementos de los valores obtemidos
+
+  # C.1 (texto). Recibe lo que retorna ranking/2 y las opciones usadas, para mostrarlas en el titulo
+  def reporte_ranking_c1(resultado, opciones) do
+    encabezado = "\n\n----------C.1 ranking(liquidaciones, #{inspect(opciones)})----------\n"
+
+    case resultado do
+      {:ok, lista} ->
+        cuerpo =
+          lista
+          |> Enum.with_index(1) #index para organizarlo bonito en el string
+          |> Enum.map(fn {x, posicion} -> #le ingresa una lista de tuplas al map
+            "#{posicion}. #{x.nombre} (#{x.codigo})\n    prendas: #{x.prendas}\n    bruto: #{Util.formater(x.bruto)}\n    neto: #{Util.formater(x.neto)}\n"
+          end)
+          |> Enum.join("\n") #join para separar cada puesto del ranking con un salto de linea
+
+        encabezado <> cuerpo #junta el titulo con el rankin
+
+      {:error, motivo} ->
+        encabezado <> "Opciones invalidas: #{inspect(motivo)}" #inspect vuelve la tupla en un string para agregarlo a mi string final
+    end
+  end
+
+  #C2
+  # Recibe dos mapas %{dia => prendas} y los combina sumando las prendas de los dias presentes en ambos
+  # Map.merge/3 llama a la funcion SOLO cuando la clave (el dia) esta en los dos mapas.
+  # Si el dia esta en un solo mapa, se copia tal cual (por eso el dia 7 queda con 200)
+  def combinar_talleres(produccion_propia, produccion_aliada) do #recibe produccion propia y aliada cada una como un mapa con dia ,prendas
+    Map.merge(produccion_propia, produccion_aliada, fn _dia, prendas_propias, prendas_aliadas -> #retorna un solo mapa con {dia => prendas mias + prendas del otro taller ese dia}
+      prendas_propias + prendas_aliadas
+    end)
+  end
+
+  # C.2 (texto). Muestra dia por dia lo que produjo cada taller, el resultado de Map.merge/3
+  # y, solo para comparar, el resultado de Map.merge/2 (que no suma: el segundo mapa pisa al primero)
+  def reporte_c2(produccion_propia, produccion_aliada) do
+    combinado = combinar_talleres(produccion_propia, produccion_aliada)
+    sin_sumar = Map.merge(produccion_propia, produccion_aliada) #este map merge/2 no suma los valores que tienen clave comun, simplemente escoje el valor asociado a la clave, pero dicho valor es el que sea el mayor de los dos mapas
+
+    filas =
+      combinado
+      |> Map.keys() #me retorna una lista con todas las claves, es decir los dias
+      |> Enum.sort() #ordena esa lista de dias en orden de menor a mayor
+      |> Enum.map(fn dia ->
+        # Map.get/3 con "-" para indicar que ese taller no informo ese dia
+        "dia #{dia}:\n    taller propio: #{Map.get(produccion_propia, dia, "-")}\n    taller aliado: #{Map.get(produccion_aliada, dia, "-")}\n    combinado con Map.merge/3 (suma): #{Map.get(combinado, dia)}\n    con Map.merge/2 (no suma): #{Map.get(sin_sumar, dia)}\n"
+      end) #el merge /3 me indica la suma de produccion de ambos talleres en un dia especifico, el map merge /2 me indica el taller que mas produjo de los dos en un dia especifico
+      |> Enum.join("\n")
+
+    "\n\n----------C.2 Produccion combinada con el taller aliado----------\n#{filas}"
+  end
 end

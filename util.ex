@@ -82,9 +82,10 @@ defmodule Util do
     ```
   """
   def ingresar(mensaje, :texto) do
-    mensaje
-    |> IO.gets()
-    |> String.trim()
+    case IO.gets(mensaje) do
+      texto when is_binary(texto) -> String.trim(texto)
+      _ -> ""
+    end
   end
 
   def ingresar(mensaje, :booleano) do
@@ -140,12 +141,12 @@ defmodule Util do
    -valor, para convertirlo a dos decimales
   """
   def formater(valor) do
-  # Si es entero, lo divide por 1 para volverlo float (ej. 529560 -> 529560.0)
-  # Si ya es float, lo deja igual.
-  float_valor = if is_integer(valor), do: valor / 1, else: valor
+    # Si es entero, lo divide por 1 para volverlo float (ej. 529560 -> 529560.0)
+    # Si ya es float, lo deja igual.
+    float_valor = if is_integer(valor), do: valor / 1, else: valor
 
-  :io_lib.format("~.2f", [float_valor])
-  |> List.to_string()
+    :io_lib.format("~.2f", [float_valor])
+    |> List.to_string()
   end
 
   def texto_a_entero(texto) do
