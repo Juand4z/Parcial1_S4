@@ -30,10 +30,6 @@ defmodule Validacion do
     end
   end
 
-  #clausula en caso de que datos tenga estructuras de datos erroneas
-  def validar_lote(lote, _confeccionistas, _lineas) when not is_map(lote),
-  do: {:error, :confeccionista_desconocido}
-
   # Verifica si el confeccionista asignado a un lote existe en la coleccion de confeccionistas.
   #
   # ## Retorna:

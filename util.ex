@@ -202,7 +202,7 @@ defmodule Util do
   #esta validacion se construyo usando la logica de la inteligencia artifial, la cual sugirio que filtraramos los datos antes de ingresarlos al programa
   #esto con el proposito de separar los errores de datos mal ingresados con los errores de las reglas de negocio
 
-  
+
 
 
   @doc """
@@ -231,7 +231,7 @@ defmodule Util do
   @doc """
   Filtra la lista de lotes que entrega Datos. Solo revisa la ESTRUCTURA: se descartan los elementos que no sean
   un mapa con las cinco claves (confeccionista, linea, dia, prendas, defectos). Los valores NO se revisan aqui:
-  un lote con un dia, unas prendas o un porcentaje erroneos pasa este filtro y lo rechaza Validacion (y sale en R1).
+  un lote con un dia, unas prendas o un porcentaje erroneos pasa este filtro y lo rechaza Validacion (y sale en el reportesito 1).
 
   Retorna: %{validos: lista, descartados: lista de tuplas {elemento, motivo}}.
   """
