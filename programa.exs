@@ -7,7 +7,17 @@ defmodule Programa do
   - Fecha: Octubre 5 2026
   - Licencia: GNU GPL v3
   """
-
+  @doc """
+  Funcion principal del programa. Coordina el flujo completo del taller, de principio a fin:
+  1. Carga los confeccionistas y las lineas de Datos y los indexa en mapas (por 'codigo' y por 'id') con Util.convertir_a_mapa_por/2.
+  2. Solicita por consola un lote adicional (confeccionista;linea;dia;prendas;defectos) y lo concatena a los lotes de Datos.
+  3. Valida todos los lotes y los separa en validos e invalidos con Validacion.validar_lotes/3.
+  4. Calcula la produccion por dia y las liquidaciones de todos los confeccionistas.
+  5. Muestra por consola los reportes R1 a R8.
+  6. Punto C.1: muestra cuatro rankings de liquidaciones usando keyword lists con distintas opciones (campo, orden y limite).
+  7. Punto C.2: combina la produccion por dia del taller con la de un taller aliado y muestra el reporte.
+  8. Solicita el codigo de un confeccionista y muestra su comprobante individual (una sola consulta por ejecucion).
+"""
   def main do
     confeccionistas = Util.convertir_a_mapa_por(Datos.confeccionistas(), :codigo) #convierto los datos de una lista de mapas a un solo mapa con clave "el codigo del confeccionista"
     lineas = Util.convertir_a_mapa_por(Datos.lineas(), :id)
