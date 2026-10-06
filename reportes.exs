@@ -212,9 +212,19 @@ Parametros:
   end
 
 
-  # R5 (calculo). Retorna una lista de 6 mapas (uno por dia) con la forma %{dia, prendas, lideres}
-  # "lideres" es una lista con TODOS los confeccionistas que igualan el maximo de prendas ese dia.
-  # Si "lideres" es una lista vacia significa que ese dia no hubo lotes validos
+ @doc """
+  Funcion que calcula el confeccionista (o confeccionistas, si hay empate) que mas prendas
+  produjo en cada uno de los 6 dias de produccion.
+
+  Retorna:
+  Una lista de 6 mapas (uno por dia) con la estructura %{dia, prendas, lideres}.
+  'lideres' es una lista con TODOS los confeccionistas que igualan el maximo de prendas ese dia,
+  cada uno como un mapa %{codigo, nombre, dia, prendas}.
+  Si 'lideres' es una lista vacia significa que ese dia no hubo lotes validos (y 'prendas' vale 0).
+
+  Parametros:
+  - 'liquidaciones' : Lista de mapas que retorna Liquidacion.liquidar_todos, uno por confeccionista.
+  """
   def lideres_por_dia(liquidaciones) do #entra una lista de mapas donde cada elemento es una liquidacion
     # lista de mapas, un mapa por cada dia que trabajo cada confeccionista: %{codigo, nombre, dia, prendas}
     entradas =
@@ -252,7 +262,16 @@ Parametros:
     end)
   end
 
-  # R5 (texto). Recibe la lista que entrega lideres_por_dia/1
+  @doc """
+  R5. Funcion que genera el reporte del lider de cada dia y de quien ocupo el primer lugar en mas dias.
+
+  Retorna:
+  Un String con el titulo del reporte, un bloque por cada dia con su lider (o lideres, si hay empate) y las prendas
+  que produjo (o 'sin lotes validos' si ese dia nadie trabajo) y, al final, quien ocupo el primer lugar en mas dias.
+
+  Parametros:
+  - 'lideres_dias' : Lista de mapas %{dia, prendas, lideres} que retorna lideres_por_dia/1.
+  """
   def reporte_r5(lideres_dias) do
     lineas =
       lideres_dias
@@ -304,9 +323,21 @@ Parametros:
   end
 
 
-  # R6 (calculo). Retorna {:ok, mejores, elegibles} o {:error, :sin_elegibles}
-  # elegibles son los que tienen al menos 3 lotes validos, ordenados del mejor al peor porcentaje ponderado
-  # mejores son todos los que igualan el menor porcentaje ponderado (por si hay empate)
+  @doc """
+  R6 (calculo). Funcion que determina el confeccionista con mejor calidad, es decir, el menor porcentaje
+  de defectos ponderado por prendas. Solo participan los confeccionistas con al menos 3 lotes validos.
+  El porcentaje ponderado es suma(defectos * prendas) / suma(prendas).
+
+  Retorna:
+  - {:ok, mejores, elegibles} : 'elegibles' es la lista de mapas %{codigo, nombre, lotes, ponderado, simple}
+    ordenada del mejor al peor porcentaje ponderado; 'mejores' son todos los que igualan el menor
+    porcentaje ponderado (por si hay empate).
+  - {:error, :sin_elegibles} : Ningun confeccionista tiene al menos 3 lotes validos.
+
+  Parametros:
+  - 'lotes_validos' : Lista de mapas con los lotes que pasaron la validacion.
+  - 'confeccionistas' : Mapa que contiene el codigo del confeccionista como clave y el mapa del confeccionista como valor.
+  """
   def mejor_calidad(lotes_validos, confeccionistas) do
     elegibles =
       lotes_validos
@@ -336,7 +367,18 @@ Parametros:
     end
   end
 
-  # R6 (texto). Dos cabezas de funcion segun lo que retorne mejor_calidad/2
+  @doc """
+  R6. Funcion que genera el reporte de mejor calidad. Tiene dos cabezas de funcion segun lo que retorne mejor_calidad/2.
+
+  Retorna:
+  Un String con el titulo del reporte y:
+  - Si hubo elegibles: el o los confeccionistas con mejor calidad y una comparacion de todos los elegibles
+    mostrando lotes, defectos ponderado y defectos promedio simple (para ver la diferencia entre ambas medidas).
+  - Si no hubo elegibles: un mensaje indicando que ningun confeccionista tiene al menos 3 lotes validos.
+
+  Parametros:
+  - 'resultado' : La tupla {:ok, mejores, elegibles} o {:error, :sin_elegibles} que retorna mejor_calidad/2.
+  """
   def reporte_r6({:error, :sin_elegibles}) do
     "\n\n----------R6----------\nNingun confeccionista tiene al menos 3 lotes validos"
   end
@@ -378,8 +420,17 @@ Parametros:
 
 
 
-  # R7 (calculo). Retorna un mapa con el total pagado, el total de prendas y el promedio
-  # el promedio es :no_calculable cuando no hay prendas validas (evita dividir por cero)
+  @doc """
+  R7. Funcion que calcula el total que debe pagar el taller, el total de prendas validas
+  y el costo promedio por prenda valida.
+
+  Retorna:
+  Un mapa con la estructura %{total_pagado, total_prendas, promedio}.
+  El promedio es :no_calculable cuando no hay prendas validas (evita dividir por cero).
+
+  Parametros:
+  - 'liquidaciones' : Lista de mapas que retorna Liquidacion.liquidar_todos, uno por confeccionista.
+  """
   def totales(liquidaciones) do
     total_pagado = liquidaciones |> Enum.map(fn l -> l.neto end) |> Enum.sum()
     total_prendas = liquidaciones |> Enum.map(fn l -> l.prendas end) |> Enum.sum()
@@ -394,7 +445,16 @@ Parametros:
     %{total_pagado: total_pagado, total_prendas: total_prendas, promedio: promedio}
   end
 
-  # R7 (texto)
+  @doc """
+  R7. Funcion que genera el reporte del total pagado por el taller y el costo promedio por prenda valida.
+
+  Retorna:
+  Un String con el titulo del reporte, el total que debe pagar el taller, el total de prendas validas
+  y el costo promedio por prenda (o un mensaje indicando que no puede calcularse si no hay prendas validas).
+
+  Parametros:
+  - 'totales' : Mapa %{total_pagado, total_prendas, promedio} que retorna totales/1.
+  """
   def reporte_r7(totales) do
     promedio =
       case totales.promedio do
@@ -405,8 +465,18 @@ Parametros:
     "\n\n----------R7----------\nTotal que debe pagar el taller: $#{Util.formater(totales.total_pagado)}\nTotal de prendas validas: #{totales.total_prendas}\nCosto promedio por prenda valida: #{promedio}"
   end
 
+  @doc """
+  R8 (calculo). Funcion que encuentra los confeccionistas que tuvieron al menos un lote valido en todas las
+  lineas de produccion. La cantidad de lineas se obtiene del mapa de lineas, no esta escrita a mano.
 
-  # R8 (calculo). Retorna una lista de mapas %{codigo, nombre}, vacia si ninguno cumple
+  Retorna:
+  Una lista de mapas %{codigo, nombre} ordenada por codigo, vacia si ninguno cumple.
+
+  Parametros:
+  - 'lotes_validos' : Lista de mapas con los lotes que pasaron la validacion.
+  - 'lineas' : Mapa que contiene el id de la linea como clave y el mapa de la linea como valor.
+  - 'confeccionistas' : Mapa que contiene el codigo del confeccionista como clave y el mapa del confeccionista como valor.
+  """
   def en_todas_las_lineas(lotes_validos, lineas, confeccionistas) do
     # cantidad de lineas que existen, sin dejarla escrita a mano
     total_lineas = map_size(lineas)
@@ -423,7 +493,16 @@ Parametros:
     |> Enum.sort_by(fn c -> c.codigo end)
   end
 
-  # R8 (texto)
+  @doc """
+  R8 (texto). Funcion que genera el reporte de los confeccionistas que trabajaron en todas las lineas.
+
+  Retorna:
+  Un String con el titulo del reporte y un confeccionista por linea con su nombre y codigo,
+  o un mensaje indicando que ninguno trabajo en todas las lineas si la lista esta vacia.
+
+  Parametros:
+  - 'confeccionistas' : Lista de mapas %{codigo, nombre} que retorna en_todas_las_lineas/3.
+  """
   def reporte_r8(confeccionistas) do
     contenido =
       case confeccionistas do

@@ -170,8 +170,6 @@ Parametros:
  Parametros:
  - 'confeccionistas' : Lista de mapas con los datos de todos los confeccionistas registrados validados.
  - 'lotes_validados' : Lista de mapas con los lotes validos totales.
-
-
 """
   def liquidar_todos(confeccionistas, lotes_validos) do #lotes validos entran como una lista de mapas
     grupos = Enum.group_by(lotes_validos, fn lote -> lote.confeccionista end) #crea un mapa con clave "el codigo del confeccionista" y valor "los lotes validos de ese confeccionista"
