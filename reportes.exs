@@ -466,7 +466,7 @@ Parametros:
   end
 
   @doc """
-  R8 (calculo). Funcion que encuentra los confeccionistas que tuvieron al menos un lote valido en todas las
+  R8. Funcion que encuentra los confeccionistas que tuvieron al menos un lote valido en todas las
   lineas de produccion. La cantidad de lineas se obtiene del mapa de lineas, no esta escrita a mano.
 
   Retorna:
@@ -494,7 +494,7 @@ Parametros:
   end
 
   @doc """
-  R8 (texto). Funcion que genera el reporte de los confeccionistas que trabajaron en todas las lineas.
+  R8. Funcion que genera el reporte de los confeccionistas que trabajaron en todas las lineas.
 
   Retorna:
   Un String con el titulo del reporte y un confeccionista por linea con su nombre y codigo,
