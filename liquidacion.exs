@@ -178,7 +178,8 @@ Parametros:
     |> Map.values() #convierte el mapa de confeccionistas en una lista para poder recorrerla
     |> Enum.sort_by(fn confeccionista -> confeccionista.codigo end) #recorre dicha lista para ordenarla segun el codigo del confeccionista
     |> Enum.map(fn confeccionista -> #liquida cada confeccionista, resultando una lista de mapas, siendo cada mapa los del confeccionista junto con los datos de su liquidacion
-      liquidar_confeccionista(confeccionista, Map.get(grupos, confeccionista.codigo, [])) #se usar Map.get/3 para q en caso de que un confeccionista no halla trabajo o no tenga lotes validos, la variable lotes_validos no tome el valor de "nil", sino que le asigne una lista vacia "[]" para hacer las operaciones matematicas sin problemas como Enum.sum([]) = 0
+      liquidar_confeccionista(confeccionista, Map.get(grupos, confeccionista.codigo, [])) #se usar Map.get/3 para q en caso de que un confeccionista no halla trabajo o no tenga lotes validos,
+      #la variable lotes_validos no tome el valor de "nil", sino que le asigne una lista vacia "[]" para hacer las operaciones matematicas sin problemas como Enum.sum([]) = 0
     end)
   end
 end
