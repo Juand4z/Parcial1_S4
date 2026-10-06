@@ -31,9 +31,8 @@ defmodule Medicion do
     construccion_de_listas()
   end
 
-  # ---------------------------------------------------------------
+
   # Medicion 1: buscar por codigo en una lista vs en un mapa
-  # ---------------------------------------------------------------
   defp busqueda_en_lista_y_mapa do
     IO.puts("\n=== Medicion 1: buscar #{@cantidad_busquedas} codigos entre #{@cantidad_confeccionistas} confeccionistas ===")
 
@@ -81,9 +80,7 @@ defmodule Medicion do
     IO.puts(columna("Promedio", 9) <> columna_der(promedio_lista, 22) <> columna_der(promedio_mapa, 20) <> columna_der("#{razon(promedio_lista, promedio_mapa)}x", 12))
   end
 
-  # ---------------------------------------------------------------
   # Medicion 2: construir una lista agregando al final vs al inicio
-  # ---------------------------------------------------------------
   defp construccion_de_listas do
     IO.puts("\n=== Medicion 2: construir una lista de #{@cantidad_elementos} elementos con Enum.reduce/3 ===")
 
@@ -125,9 +122,8 @@ defmodule Medicion do
     IO.puts(columna("Promedio", 9) <> columna_der(promedio_final, 18) <> columna_der(promedio_inicio, 18) <> columna_der(promedio_reverse, 23) <> columna_der("#{razon(promedio_final, promedio_inicio)}x", 11))
   end
 
-  # ---------------------------------------------------------------
+
   # Funciones de apoyo
-  # ---------------------------------------------------------------
 
   # :timer.tc/1 ejecuta la funcion y retorna {microsegundos, resultado}; solo nos interesa el tiempo
   defp medir(funcion) do
