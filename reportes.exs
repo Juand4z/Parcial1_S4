@@ -513,20 +513,36 @@ Parametros:
     "\n\n----------R8----------\n#{contenido}"
   end
 
-  # comprobante individual
-  # Busca la liquidacion de un confeccionista por su codigo.
-  # Convierte la lista de liquidaciones en un mapa indexado por codigo (como se hace con los confeccionistas)
-  # Map.fetch/2 retorna {:ok, liquidacion} si el codigo existe, o :error si no existe (sin lanzar excepcion)
-  def buscar_liquidacion(liquidaciones, codigo) do
+  @doc """
+  Funcion que busca la liquidacion de un confeccionista a partir de su codigo.
+
+  Retorna:
+  - {:ok, liquidacion} : Si el codigo existe en las liquidaciones.
+  - :error : Si el codigo no existe.
+
+  Parametros:
+  - 'liquidaciones' : Lista de mapas que retorna Liquidacion.liquidar_todos/2, uno por confeccionista.
+  - 'codigo' : Codigo del confeccionista que se desea buscar.
+  """
+   def buscar_liquidacion(liquidaciones, codigo) do
     liquidaciones
     # me retorna un mapa con clave codigo, y valor el mapa de liquidacion completo
     |> Util.convertir_a_mapa_por(:codigo)
     |> Map.fetch(codigo)
   end
 
-  # Recibe la liquidacion de UN confeccionista (el mapa que arma Liquidacion.liquidar_confeccionista/2)
-  # y retorna el texto del comprobante. Es pura: no imprime, solo arma el string
-  # liquidacion entra como un mapa
+  @doc """
+  Funcion que genera el comprobante individual de un confeccionista. Es pura: no imprime, solo arma el texto.
+  Solo aparecen los dias con al menos un lote valido.
+
+  Retorna:
+  Un String con el nombre, el codigo, el detalle de cada dia trabajado (prendas, valor de los lotes y
+  bonificacion diaria), la suma de lotes, la suma de bonificaciones, el descuento por alquiler y el neto a pagar.
+  Si el confeccionista no tiene lotes validos, el detalle indica que no tiene dias trabajados.
+
+  Parametros:
+  - 'liquidacion' : Mapa con la liquidacion de un confeccionista, que retorna Liquidacion.liquidar_confeccionista/2.
+  """
   def comprobante(liquidacion) do
     # liquidacion.detalle solo tiene los dias con al menos un lote valido, por eso no hace falta filtrar
     # se ordena por dia para garantizar que salgan en orden
@@ -549,12 +565,25 @@ Parametros:
     "\n\n----------Comprobante individual----------\nNombre: #{liquidacion.nombre}\nCodigo: #{liquidacion.codigo}\n\nDetalle por dia:\n#{detalle}\nSuma de lotes: $#{Util.formater(liquidacion.bruto)}\nSuma de bonificaciones: $#{Util.formater(liquidacion.bonificaciones)}\nDescuento por alquiler: $#{Util.formater(liquidacion.alquiler)}\nNeto a pagar: $#{Util.formater(liquidacion.neto)}"
   end
 
-  # C1
-  # Recibe la lista de liquidaciones y una keyword list con estas opciones (todas opcionales):
-  #   campo:  :neto (por defecto), :prendas o :bruto   -> por que valor se ordena
-  #   orden:  :desc (por defecto) o :asc               -> de mayor a menor o de menor a mayor
-  #   limite: entero positivo (por defecto todos)      -> cuantos confeccionistas se devuelven
-  # Retorna {:ok, lista} o {:error, motivo} si alguna opcion tiene un valor invalido
+  @doc """
+  C.1. Funcion que genera un ranking de las liquidaciones configurable mediante una keyword list.
+  Las opciones son todas opcionales:
+  - 'campo' : :neto (por defecto), :prendas o :bruto. Valor por el que se ordena.
+  - 'orden' : :desc (por defecto) o :asc. De mayor a menor o de menor a mayor.
+  - 'limite' : Entero positivo. Cantidad de confeccionistas a retornar (por defecto todos).
+  Si una clave esta repetida se usa la primera (campo: :prendas, campo: :neto ordena por :prendas).
+
+  Retorna:
+  - {:ok, lista} : Lista de liquidaciones ordenadas segun las opciones y recortada si hay limite.
+  - {:error, {:campo_invalido, valor}} : El campo no es :neto, :prendas ni :bruto.
+  - {:error, {:orden_invalido, valor}} : El orden no es :desc ni :asc.
+  - {:error, {:limite_invalido, valor}} : El limite no es un entero positivo.
+  - {:error, :opciones_invalidas} : Las opciones no son una lista.
+
+  Parametros:
+  - 'liquidaciones' : Lista de mapas que retorna Liquidacion.liquidar_todos/2, uno por confeccionista.
+  - 'opciones' : Keyword list con las opciones descritas anteriormente.
+  """
   def ranking(_liquidaciones, opciones) when not is_list(opciones) do
     # si no es una lista (por ejemplo un mapa) Keyword.get fallaria, por eso se controla primero
     {:error, :opciones_invalidas}
@@ -613,7 +642,17 @@ Parametros:
   # caso contrario, que si tiene limite, toma los primeros "limite" elementos de los valores obtemidos
   defp aplicar_limite(lista, limite), do: Enum.take(lista, limite)
 
-  # C.1 (texto). Recibe lo que retorna ranking/2 y las opciones usadas, para mostrarlas en el titulo
+  @doc """
+  C.1 (texto). Funcion que genera el reporte del ranking a partir del resultado de ranking/2.
+
+  Retorna:
+  Un String con un encabezado que muestra las opciones usadas, seguido de cada confeccionista con su posicion,
+  nombre, codigo, prendas, bruto y neto. Si el resultado es un error, retorna el encabezado con el motivo.
+
+  Parametros:
+  - 'resultado' : La tupla {:ok, lista} o {:error, motivo} que retorna ranking/2.
+  - 'opciones' : Keyword list usada en la consulta, se muestra en el encabezado.
+  """
   def reporte_ranking_c1(resultado, opciones) do
     encabezado = "\n\n----------C.1 ranking(liquidaciones, #{inspect(opciones)})----------\n"
 
@@ -639,11 +678,17 @@ Parametros:
     end
   end
 
-  # C2
-  # Recibe dos mapas %{dia => prendas} y los combina sumando las prendas de los dias presentes en ambos
-  # Map.merge/3 llama a la funcion SOLO cuando la clave (el dia) esta en los dos mapas.
-  # Si el dia esta en un solo mapa, se copia tal cual (por eso el dia 7 queda con 200)
-  # recibe produccion propia y aliada cada una como un mapa con dia ,prendas
+ @doc """
+  C.2. Funcion que combina la produccion diaria del taller con la de un taller aliado usando Map.merge/3.
+  Los dias presentes en ambos mapas suman sus prendas; los dias presentes en un solo mapa se copian sin cambios.
+
+  Retorna:
+  Un mapa %{dia => prendas} con la produccion combinada de ambos talleres.
+
+  Parametros:
+  - 'produccion_propia' : Mapa %{dia => prendas} del taller propio, que retorna produccion_por_dia/1.
+  - 'produccion_aliada' : Mapa %{dia => prendas} informado por el taller aliado.
+  """
   def combinar_talleres(produccion_propia, produccion_aliada) do
     # retorna un solo mapa con {dia => prendas mias + prendas del otro taller ese dia}
     Map.merge(produccion_propia, produccion_aliada, fn _dia, prendas_propias, prendas_aliadas ->
@@ -651,9 +696,19 @@ Parametros:
     end)
   end
 
-  # C.2 (texto). Muestra dia por dia lo que produjo cada taller, el resultado de Map.merge/3
-  # y, solo para comparar, el resultado de Map.merge/2 (que no suma: el segundo mapa pisa al primero)
-  def reporte_c2(produccion_propia, produccion_aliada) do
+  @doc """
+  C.2 (texto). Funcion que genera el reporte de la produccion combinada con el taller aliado.
+
+  Retorna:
+  Un String con un bloque por cada dia presente en alguno de los talleres, que muestra la produccion del taller
+  propio, la del aliado ("-" si no informo ese dia), el resultado de Map.merge/3 (suma) y, solo para comparar,
+  el de Map.merge/2 (el valor del segundo mapa reemplaza al del primero).
+
+  Parametros:
+  - 'produccion_propia' : Mapa %{dia => prendas} del taller propio.
+  - 'produccion_aliada' : Mapa %{dia => prendas} del taller aliado.
+  """
+    def reporte_c2(produccion_propia, produccion_aliada) do
     combinado = combinar_talleres(produccion_propia, produccion_aliada)
 
     # este map merge/2 no suma los valores que tienen clave comun, simplemente escoje el valor asociado a la clave, pero dicho valor es el que sea el mayor de los dos mapas
